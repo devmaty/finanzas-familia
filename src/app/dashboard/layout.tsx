@@ -29,8 +29,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [dolar, setDolar] = useState(0)
 
+  console.log('🏠 [DashboardLayout] Render - loading:', loading, 'user:', user ? 'EXISTS' : 'NULL')
+
   useEffect(() => {
+    console.log('🏠 [DashboardLayout] useEffect - loading:', loading, 'user:', user ? 'EXISTS' : 'NULL')
     if (!loading && !user) {
+      console.log('🏠 [DashboardLayout] No user and not loading - Redirecting to /')
       router.push('/')
     }
   }, [user, loading, router])
@@ -45,6 +49,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   if (loading) {
+    console.log('🏠 [DashboardLayout] SHOWING LOADING SPINNER')
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full" />
@@ -52,7 +57,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     )
   }
 
-  if (!user) return null
+  if (!user) {
+    console.log('🏠 [DashboardLayout] No user - Returning null')
+    return null
+  }
+
+  console.log('🏠 [DashboardLayout] Rendering dashboard content')
 
   return (
     <div className="min-h-screen bg-slate-50">

@@ -12,24 +12,29 @@ ChartJS.register(ArcElement, Tooltip, Legend)
 
 export default function DashboardPage() {
   const { profile } = useAuth()
-  const { 
-    tarjetas, gastos, loading, currentMonth, monthKey, 
+  const {
+    tarjetas, gastos, loading, currentMonth, monthKey,
     getGastosMes, getImpuestosMes
   } = useData()
   const [dolar, setDolar] = useState(1050)
   const [showEndingModal, setShowEndingModal] = useState(false)
+
+  console.log('📄 [ResumenPage] Render - loading:', loading)
 
   useEffect(() => {
     fetchDolar().then(setDolar)
   }, [])
 
   if (loading) {
+    console.log('📄 [ResumenPage] SHOWING LOADING SPINNER - loading is TRUE')
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full" />
       </div>
     )
   }
+
+  console.log('📄 [ResumenPage] Rendering content - loading is FALSE')
 
   const gastosMes = getGastosMes(monthKey)
   const impuestosMes = getImpuestosMes(monthKey)

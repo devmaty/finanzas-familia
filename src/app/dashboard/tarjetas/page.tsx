@@ -24,6 +24,8 @@ export default function TarjetasPage() {
     nombre: '', tipo: 'visa', banco: '', digitos: '', cierre: ''
   })
 
+  console.log('💳 [TarjetasPage] Render - loading:', loading)
+
   const resetForm = () => {
     setForm({ nombre: '', tipo: 'visa', banco: '', digitos: '', cierre: '' })
   }
@@ -78,7 +80,7 @@ export default function TarjetasPage() {
       console.error('Exception:', err)
       alert('Error inesperado')
     }
-    
+
     setSaving(false)
   }
 
@@ -92,12 +94,15 @@ export default function TarjetasPage() {
   }
 
   if (loading) {
+    console.log('💳 [TarjetasPage] SHOWING LOADING SPINNER - loading is TRUE')
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full" />
       </div>
     )
   }
+
+  console.log('💳 [TarjetasPage] Rendering content - loading is FALSE')
 
   return (
     <div className="space-y-6">

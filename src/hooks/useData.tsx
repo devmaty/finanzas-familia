@@ -68,9 +68,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
 
   const fetchAll = useCallback(async () => {
+    console.log('📊 [useData] fetchAll called - Setting loading to TRUE')
     setLoading(true)
     try {
       if (!user) {
+        console.log('📊 [useData] No user - Clearing data and setting loading to FALSE')
         setTarjetas([])
         setGastos([])
         setImpuestos([])
@@ -82,6 +84,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return
       }
 
+      console.log('📊 [useData] Fetching data for user:', user.id)
       const [
         { data: tarjetasData },
         { data: gastosData },
@@ -100,6 +103,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         supabase.from('movimientos_ahorro').select('*').eq('user_id', user.id).order('fecha', { ascending: false }).limit(20)
       ])
 
+      console.log('📊 [useData] Data fetched successfully')
       setTarjetas(tarjetasData || [])
       setGastos(gastosData || [])
       setImpuestos(impuestosData || [])
@@ -108,7 +112,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setMetas(metasData || [])
       setMovimientos(movimientosData || [])
     } catch (error) {
-      console.error('Error fetching data', error)
+      console.error('📊 [useData] Error fetching data', error)
       setTarjetas([])
       setGastos([])
       setImpuestos([])
@@ -117,15 +121,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setMetas([])
       setMovimientos([])
     } finally {
+      console.log('📊 [useData] Setting loading to FALSE')
       setLoading(false)
     }
   }, [supabase, user])
 
   useEffect(() => {
+    console.log('📊 [useData] useEffect triggered - authLoading:', authLoading)
     if (authLoading) {
+      console.log('📊 [useData] Auth still loading - Setting loading to TRUE')
       setLoading(true)
       return
     }
+    console.log('📊 [useData] Auth finished - Calling fetchAll')
     fetchAll()
   }, [authLoading, fetchAll])
 
