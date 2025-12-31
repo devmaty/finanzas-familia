@@ -147,12 +147,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     console.log('📊 [useData] useEffect triggered - authLoading:', authLoading, 'user:', user?.id || 'NULL')
     console.log('📊 [useData] useEffect - fetchAll function identity:', fetchAll.toString().substring(0, 50))
+
+    // If we have a user, fetch data regardless of authLoading
+    // authLoading might be true while fetching profile, but we can still fetch data
+    if (user) {
+      console.log('📊 [useData] User exists - Calling fetchAll regardless of authLoading')
+      fetchAll()
+      return
+    }
+
+    // If no user and auth is still loading, wait
     if (authLoading) {
-      console.log('📊 [useData] Auth still loading - Setting loading to TRUE')
+      console.log('📊 [useData] No user and auth still loading - Setting loading to TRUE and waiting')
       setLoading(true)
       return
     }
-    console.log('📊 [useData] Auth finished - Calling fetchAll')
+
+    // If no user and auth finished loading, clear data
+    console.log('📊 [useData] No user and auth finished - Calling fetchAll to clear data')
     fetchAll()
   }, [authLoading, user?.id, fetchAll])
 
