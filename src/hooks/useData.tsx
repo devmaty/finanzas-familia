@@ -545,12 +545,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
       getGastosMes, getImpuestosMes,
       getGastosNoProximoMes, getDiferenciaMeses
     }
-    // Functions are NOT in dependencies because they access current state via closure
-    // They don't need to be recreated when state changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     tarjetas, gastos, impuestos, categorias, tags, metas, movimientos,
-    loading, currentMonth
+    loading, currentMonth,
+    fetchAll, changeMonth,
+    addTarjeta, updateTarjeta, deleteTarjeta,
+    addGasto, updateGasto, deleteGasto,
+    addImpuesto, updateImpuesto, deleteImpuesto,
+    addTag, deleteTag,
+    addMeta, updateMeta, deleteMeta,
+    addMovimiento,
+    getGastosMes, getImpuestosMes,
+    getGastosNoProximoMes, getDiferenciaMeses
   ])
 
   return (
