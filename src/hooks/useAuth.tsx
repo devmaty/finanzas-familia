@@ -148,7 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log('🔧 [updateProfile] Starting update...', data)
 
     // Create a timeout that will reject after 5 seconds
-    let timeoutId: NodeJS.Timeout
+    let timeoutId: NodeJS.Timeout | undefined
     const timeoutPromise = new Promise((_, reject) => {
       timeoutId = setTimeout(() => {
         console.error('❌ [updateProfile] TIMEOUT - Query hung for 5 seconds, forcing page reload')
@@ -166,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await Promise.race([queryPromise, timeoutPromise]) as any
 
       // Query completed successfully - clear the timeout!
-      clearTimeout(timeoutId)
+      if (timeoutId) clearTimeout(timeoutId)
       console.log('✅ [updateProfile] Completed successfully')
 
       if (!error) {
