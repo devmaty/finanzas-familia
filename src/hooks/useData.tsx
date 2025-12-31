@@ -55,7 +55,7 @@ const DataContext = createContext<DataContextType | undefined>(undefined)
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth()
-  const supabase = useMemo(createClient, [])
+  const supabase = useMemo(() => createClient(), [])
   
   const [tarjetas, setTarjetas] = useState<Tarjeta[]>([])
   const [gastos, setGastos] = useState<Gasto[]>([])
