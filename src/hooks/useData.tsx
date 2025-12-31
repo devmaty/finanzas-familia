@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, createContext, useContext, ReactNode, useMemo } from 'react'
+import { useState, useEffect, useCallback, createContext, useContext, ReactNode, useMemo, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useAuth } from './useAuth'
 import { Tarjeta, Gasto, Impuesto, Categoria, Tag, Meta, MovimientoAhorro } from '@/types'
@@ -60,6 +60,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth()
   const supabase = useMemo(() => createClient(), [])
 
+  // Use ref to maintain stable reference to user
+  const userRef = useRef(user)
+  useEffect(() => {
+    userRef.current = user
+  }, [user])
+
   console.log('📊 [DataProvider] RENDER - authLoading:', authLoading, 'user:', user?.id || 'NULL')
 
   const [tarjetas, setTarjetas] = useState<Tarjeta[]>([])
@@ -73,9 +79,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
 
   const fetchAll = useCallback(async () => {
+    const currentUser = userRef.current
     fetchAllCallCount++
     console.log('📊 [useData] fetchAll called #' + fetchAllCallCount + ' - Setting loading to TRUE')
-    console.log('📊 [useData] fetchAll - Current user.id:', user?.id)
+    console.log('📊 [useData] fetchAll - Current user.id:', currentUser?.id)
 
     if (fetchAllCallCount > 10) {
       console.error('🚨 [useData] fetchAll called more than 10 times! Infinite loop detected!')
@@ -85,7 +92,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     setLoading(true)
     try {
-      if (!user) {
+      if (!currentUser) {
         console.log('📊 [useData] No user - Clearing data and setting loading to FALSE')
         setTarjetas([])
         setGastos([])
@@ -98,7 +105,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      console.log('📊 [useData] Fetching data for user:', user.id)
+      console.log('📊 [useData] Fetching data for user:', currentUser.id)
       const startTime = Date.now()
 
       // Try simple queries first - without joins
@@ -106,7 +113,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const { data: tarjetasData, error: tarjetasError } = await supabase
         .from('tarjetas')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .order('created_at')
       console.log('📊 [useData] Tarjetas result:', tarjetasData?.length || 0, 'rows', tarjetasError ? 'ERROR: ' + JSON.stringify(tarjetasError) : '')
 
@@ -114,7 +121,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const { data: categoriasData, error: categoriasError } = await supabase
         .from('categorias')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .order('nombre')
       console.log('📊 [useData] Categorias result:', categoriasData?.length || 0, 'rows', categoriasError ? 'ERROR: ' + JSON.stringify(categoriasError) : '')
 
@@ -122,7 +129,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const { data: gastosData, error: gastosError } = await supabase
         .from('gastos')
         .select('*, tarjeta:tarjetas(*), categoria:categorias(*)')
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .order('fecha', { ascending: false })
       console.log('📊 [useData] Gastos result:', gastosData?.length || 0, 'rows', gastosError ? 'ERROR: ' + JSON.stringify(gastosError) : '')
 
@@ -130,15 +137,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const { data: impuestosData, error: impuestosError } = await supabase
         .from('impuestos')
         .select('*, tarjeta:tarjetas(*)')
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .order('created_at', { ascending: false })
       console.log('📊 [useData] Impuestos result:', impuestosData?.length || 0, 'rows', impuestosError ? 'ERROR: ' + JSON.stringify(impuestosError) : '')
 
       console.log('📊 [useData] Fetching tags...')
-      const { data: tagsData, error: tagsError } = await supabase
+      const { data: tagsData, error: tagsError} = await supabase
         .from('tags')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .order('nombre')
       console.log('📊 [useData] Tags result:', tagsData?.length || 0, 'rows', tagsError ? 'ERROR: ' + JSON.stringify(tagsError) : '')
 
@@ -146,7 +153,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const { data: metasData, error: metasError } = await supabase
         .from('metas')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .order('created_at')
       console.log('📊 [useData] Metas result:', metasData?.length || 0, 'rows', metasError ? 'ERROR: ' + JSON.stringify(metasError) : '')
 
@@ -154,7 +161,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const { data: movimientosData, error: movimientosError } = await supabase
         .from('movimientos_ahorro')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .order('fecha', { ascending: false })
         .limit(20)
       console.log('📊 [useData] Movimientos result:', movimientosData?.length || 0, 'rows', movimientosError ? 'ERROR: ' + JSON.stringify(movimientosError) : '')
@@ -195,7 +202,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supabase, user?.id])
+  }, [supabase])
 
   useEffect(() => {
     console.log('📊 [useData] useEffect triggered - authLoading:', authLoading, 'user:', user?.id || 'NULL')
@@ -232,12 +239,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     console.log('💳 [useData] addTarjeta called with data:', data)
     const { data: newTarjeta, error } = await supabase
       .from('tarjetas')
-      .insert({ ...data, user_id: user!.id })
+      .insert({ ...data, user_id: userRef.current!.id })
       .select()
       .single()
     if (!error && newTarjeta) setTarjetas(prev => [...prev, newTarjeta])
     return { error }
-  }, [supabase, user?.id])
+  }, [supabase])
 
   const updateTarjeta = useCallback(async (id: string, data: Partial<Tarjeta>) => {
     console.log('💳 [useData] updateTarjeta called for id:', id)
@@ -256,10 +263,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Gastos CRUD
   const addGasto = useCallback(async (data: Omit<Gasto, 'id' | 'user_id' | 'created_at' | 'tarjeta' | 'categoria' | 'tags'>) => {
     console.log('💰 [useData] addGasto called with data:', data)
-    console.log('💰 [useData] addGasto - user.id:', user?.id)
+    console.log('💰 [useData] addGasto - user.id:', userRef.current?.id)
 
     try {
-      const insertData = { ...data, user_id: user!.id }
+      const insertData = { ...data, user_id: userRef.current!.id }
       console.log('💰 [useData] addGasto - Inserting:', insertData)
 
       const { data: newGasto, error } = await supabase
@@ -286,7 +293,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.error('💰 [useData] addGasto EXCEPTION:', err)
       return { error: err as any, data: undefined }
     }
-  }, [supabase, user?.id])
+  }, [supabase])
 
   const updateGasto = useCallback(async (id: string, data: Partial<Gasto>) => {
     console.log('💰 [useData] updateGasto called for id:', id)
@@ -314,12 +321,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     console.log('📝 [useData] addImpuesto called with data:', data)
     const { data: newImp, error } = await supabase
       .from('impuestos')
-      .insert({ ...data, user_id: user!.id })
+      .insert({ ...data, user_id: userRef.current!.id })
       .select('*, tarjeta:tarjetas(*)')
       .single()
     if (!error && newImp) setImpuestos(prev => [newImp, ...prev])
     return { error }
-  }, [supabase, user?.id])
+  }, [supabase])
 
   const updateImpuesto = useCallback(async (id: string, data: Partial<Impuesto>) => {
     console.log('📝 [useData] updateImpuesto called for id:', id)
@@ -347,12 +354,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     console.log('🏷️ [useData] addTag called with nombre:', nombre)
     const { data: newTag, error } = await supabase
       .from('tags')
-      .insert({ nombre, user_id: user!.id })
+      .insert({ nombre, user_id: userRef.current!.id })
       .select()
       .single()
     if (!error && newTag) setTags(prev => [...prev, newTag])
     return { error }
-  }, [supabase, user?.id])
+  }, [supabase])
 
   const deleteTag = useCallback(async (id: string) => {
     console.log('🏷️ [useData] deleteTag called for id:', id)
@@ -366,12 +373,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     console.log('🎯 [useData] addMeta called with data:', data)
     const { data: newMeta, error } = await supabase
       .from('metas')
-      .insert({ ...data, user_id: user!.id })
+      .insert({ ...data, user_id: userRef.current!.id })
       .select()
       .single()
     if (!error && newMeta) setMetas(prev => [...prev, newMeta])
     return { error }
-  }, [supabase, user?.id])
+  }, [supabase])
 
   const updateMeta = useCallback(async (id: string, data: Partial<Meta>) => {
     console.log('🎯 [useData] updateMeta called for id:', id)
@@ -390,10 +397,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Ahorros
   const addMovimiento = useCallback(async (tipo: 'pesos' | 'usd', monto: number) => {
     console.log('💵 [useData] addMovimiento called - tipo:', tipo, 'monto:', monto)
-    console.log('💵 [useData] addMovimiento - user.id:', user?.id)
+    console.log('💵 [useData] addMovimiento - user.id:', userRef.current?.id)
 
     try {
-      const insertData = { tipo, monto, user_id: user!.id }
+      const insertData = { tipo, monto, user_id: userRef.current!.id }
       console.log('💵 [useData] addMovimiento - Inserting:', insertData)
 
       const { error } = await supabase
@@ -415,7 +422,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.error('💵 [useData] addMovimiento EXCEPTION:', err)
       return { error: err as any }
     }
-  }, [supabase, user?.id, fetchAll])
+  }, [supabase, fetchAll])
 
   // CORREGIDO: Filtrar gastos por mes correctamente
   const getGastosMes = useCallback((mes: string) => {
