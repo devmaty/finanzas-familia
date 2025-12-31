@@ -132,9 +132,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const hideDuration = now - hideTime
         console.log('👁️ [useAuth] Tab visible again - was hidden for', hideDuration, 'ms')
 
-        // Only reload if was hidden for more than 2 seconds
-        if (hideDuration > 2000) {
-          console.log('👁️ [useAuth] Session corrupted - signing out and forcing full reload')
+        // Only logout and reload if was hidden for more than 5 minutes
+        // This prevents logout on quick tab switches (checking email, etc.)
+        // but forces fresh session if away for a long time
+        if (hideDuration > 300000) {
+          console.log('👁️ [useAuth] Tab was hidden for', Math.round(hideDuration/1000), 'seconds - forcing logout and reload')
           // Sign out via Supabase to clean up client state
           supabase.auth.signOut().then(() => {
             // Clear all storage
@@ -144,7 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             window.location.reload()
           })
         } else {
-          console.log('👁️ [useAuth] Not reloading - was only hidden for', hideDuration, 'ms')
+          console.log('👁️ [useAuth] Tab was only hidden for', Math.round(hideDuration/1000), 'seconds - no logout needed')
         }
       } else if (document.visibilityState === 'visible' && !wasHidden) {
         console.log('👁️ [useAuth] Tab became visible but was never hidden - ignoring')
