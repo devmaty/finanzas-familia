@@ -1,10 +1,6 @@
 'use client'
 
- codex/fix-month-change-display-issue-tozlze
 import { useState, useEffect, useCallback, createContext, useContext, ReactNode, useMemo } from 'react'
-
-import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react'
-main
 import { createClient } from '@/lib/supabase'
 import { useAuth } from './useAuth'
 import { Tarjeta, Gasto, Impuesto, Categoria, Tag, Meta, MovimientoAhorro } from '@/types'
@@ -58,13 +54,8 @@ type DataContextType = {
 const DataContext = createContext<DataContextType | undefined>(undefined)
 
 export function DataProvider({ children }: { children: ReactNode }) {
- codex/fix-month-change-display-issue-tozlze
   const { user, loading: authLoading } = useAuth()
-  const supabase = useMemo(() => createClient(), [])
-
-  const { user } = useAuth()
-  const supabase = createClient()
- main
+  const supabase = useMemo(createClient, [])
   
   const [tarjetas, setTarjetas] = useState<Tarjeta[]>([])
   const [gastos, setGastos] = useState<Gasto[]>([])
@@ -77,20 +68,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
 
   const fetchAll = useCallback(async () => {
- codex/fix-month-change-display-issue-tozlze
-
-    if (!user) {
-      setTarjetas([])
-      setGastos([])
-      setImpuestos([])
-      setCategorias([])
-      setTags([])
-      setMetas([])
-      setMovimientos([])
-      setLoading(false)
-      return
-    }
- main
     setLoading(true)
     try {
       if (!user) {
@@ -104,7 +81,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return
       }
 
- codex/fix-month-change-display-issue-tozlze
       const [
         { data: tarjetasData },
         { data: gastosData },
@@ -142,34 +118,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false)
     }
-
-    const [
-      { data: tarjetasData },
-      { data: gastosData },
-      { data: impuestosData },
-      { data: categoriasData },
-      { data: tagsData },
-      { data: metasData },
-      { data: movimientosData }
-    ] = await Promise.all([
-      supabase.from('tarjetas').select('*').eq('user_id', user.id).order('created_at'),
-      supabase.from('gastos').select('*, tarjeta:tarjetas(*), categoria:categorias(*)').eq('user_id', user.id).order('fecha', { ascending: false }),
-      supabase.from('impuestos').select('*, tarjeta:tarjetas(*)').eq('user_id', user.id).order('created_at', { ascending: false }),
-      supabase.from('categorias').select('*').eq('user_id', user.id).order('nombre'),
-      supabase.from('tags').select('*').eq('user_id', user.id).order('nombre'),
-      supabase.from('metas').select('*').eq('user_id', user.id).order('created_at'),
-      supabase.from('movimientos_ahorro').select('*').eq('user_id', user.id).order('fecha', { ascending: false }).limit(20)
-    ])
-
-    setTarjetas(tarjetasData || [])
-    setGastos(gastosData || [])
-    setImpuestos(impuestosData || [])
-    setCategorias(categoriasData || [])
-    setTags(tagsData || [])
-    setMetas(metasData || [])
-    setMovimientos(movimientosData || [])
-    setLoading(false)
- main
   }, [supabase, user])
 
   useEffect(() => {
@@ -179,12 +127,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
     fetchAll()
   }, [authLoading, fetchAll])
-
-  useEffect(() => {
-    if (user) {
-      setCurrentMonth(new Date())
-    }
-  }, [user])
 
   useEffect(() => {
     if (user) {
