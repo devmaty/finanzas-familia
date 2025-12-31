@@ -141,15 +141,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const updateProfile = async (data: Partial<Profile>) => {
-    if (!user) return
+    console.log('🔐 [useAuth] updateProfile CALLED')
+    console.log('🔐 [useAuth] updateProfile - user:', user?.id || 'NULL')
+    console.log('🔐 [useAuth] updateProfile - data:', data)
+
+    if (!user) {
+      console.log('🔐 [useAuth] updateProfile - NO USER, returning')
+      return
+    }
+
+    console.log('🔐 [useAuth] updateProfile - Calling supabase.update')
     const { error } = await supabase
       .from('profiles')
       .update(data)
       .eq('id', user.id)
-    
+
+    console.log('🔐 [useAuth] updateProfile - Update result, error:', error)
+
     if (!error) {
+      console.log('🔐 [useAuth] updateProfile - Success, updating local state')
       setProfile(prev => prev ? { ...prev, ...data } : null)
+    } else {
+      console.error('🔐 [useAuth] updateProfile - ERROR:', error)
     }
+
+    console.log('🔐 [useAuth] updateProfile - FINISHED')
   }
 
   return (
