@@ -61,11 +61,18 @@ export default function GastosPage() {
   })
 
   const handleSaveGasto = async () => {
-    if (!gastoForm.descripcion || !gastoForm.monto) return
-    
+    console.log('🔵 [GastosPage] handleSaveGasto CALLED')
+    console.log('🔵 [GastosPage] handleSaveGasto - form:', gastoForm)
+    console.log('🔵 [GastosPage] handleSaveGasto - addGasto function:', typeof addGasto, addGasto)
+
+    if (!gastoForm.descripcion || !gastoForm.monto) {
+      console.log('🔵 [GastosPage] handleSaveGasto - Validation failed, returning')
+      return
+    }
+
     const fecha = new Date(gastoForm.fecha)
     const mesFacturacion = `${fecha.getFullYear()}-${String(fecha.getMonth() + 2).padStart(2, '0')}`
-    
+
     const data = {
       descripcion: gastoForm.descripcion,
       tarjeta_id: gastoForm.tarjeta_id || null,
@@ -79,12 +86,18 @@ export default function GastosPage() {
       es_fijo: gastoForm.es_fijo
     }
 
+    console.log('🔵 [GastosPage] handleSaveGasto - Data to save:', data)
+
     if (editingGasto) {
+      console.log('🔵 [GastosPage] handleSaveGasto - Updating gasto:', editingGasto.id)
       await updateGasto(editingGasto.id, data)
     } else {
-      await addGasto(data)
+      console.log('🔵 [GastosPage] handleSaveGasto - Adding new gasto')
+      const result = await addGasto(data)
+      console.log('🔵 [GastosPage] handleSaveGasto - addGasto result:', result)
     }
 
+    console.log('🔵 [GastosPage] handleSaveGasto - Closing modal')
     setShowGastoModal(false)
     setEditingGasto(null)
     resetGastoForm()
@@ -161,7 +174,11 @@ export default function GastosPage() {
               {gastosMes.length}
             </span>
           </h3>
-          <button onClick={() => { resetGastoForm(); setShowGastoModal(true) }} className="btn btn-primary">
+          <button onClick={() => {
+            console.log('🔵 [GastosPage] "Agregar Gasto" button CLICKED')
+            resetGastoForm();
+            setShowGastoModal(true)
+          }} className="btn btn-primary">
             <Plus className="w-4 h-4" /> Agregar
           </button>
         </div>
@@ -461,7 +478,10 @@ export default function GastosPage() {
                 />
                 <span className="font-semibold">Gasto fijo mensual</span>
               </label>
-              <button onClick={handleSaveGasto} className="btn btn-primary w-full justify-center">
+              <button onClick={() => {
+                console.log('🔵 [GastosPage] "Guardar Gasto" button CLICKED')
+                handleSaveGasto()
+              }} className="btn btn-primary w-full justify-center">
                 Guardar
               </button>
             </div>
