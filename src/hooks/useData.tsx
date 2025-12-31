@@ -101,45 +101,63 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.log('📊 [useData] Fetching data for user:', user.id)
       const startTime = Date.now()
 
+      // Try simple queries first - without joins
       console.log('📊 [useData] Fetching tarjetas...')
-      const tarjetasPromise = supabase.from('tarjetas').select('*').eq('user_id', user.id).order('created_at')
-
-      console.log('📊 [useData] Fetching gastos...')
-      const gastosPromise = supabase.from('gastos').select('*, tarjeta:tarjetas(*), categoria:categorias(*)').eq('user_id', user.id).order('fecha', { ascending: false })
-
-      console.log('📊 [useData] Fetching impuestos...')
-      const impuestosPromise = supabase.from('impuestos').select('*, tarjeta:tarjetas(*)').eq('user_id', user.id).order('created_at', { ascending: false })
+      const { data: tarjetasData, error: tarjetasError } = await supabase
+        .from('tarjetas')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at')
+      console.log('📊 [useData] Tarjetas result:', tarjetasData?.length || 0, 'rows', tarjetasError ? 'ERROR: ' + JSON.stringify(tarjetasError) : '')
 
       console.log('📊 [useData] Fetching categorias...')
-      const categoriasPromise = supabase.from('categorias').select('*').eq('user_id', user.id).order('nombre')
+      const { data: categoriasData, error: categoriasError } = await supabase
+        .from('categorias')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('nombre')
+      console.log('📊 [useData] Categorias result:', categoriasData?.length || 0, 'rows', categoriasError ? 'ERROR: ' + JSON.stringify(categoriasError) : '')
+
+      console.log('📊 [useData] Fetching gastos with joins...')
+      const { data: gastosData, error: gastosError } = await supabase
+        .from('gastos')
+        .select('*, tarjeta:tarjetas(*), categoria:categorias(*)')
+        .eq('user_id', user.id)
+        .order('fecha', { ascending: false })
+      console.log('📊 [useData] Gastos result:', gastosData?.length || 0, 'rows', gastosError ? 'ERROR: ' + JSON.stringify(gastosError) : '')
+
+      console.log('📊 [useData] Fetching impuestos...')
+      const { data: impuestosData, error: impuestosError } = await supabase
+        .from('impuestos')
+        .select('*, tarjeta:tarjetas(*)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+      console.log('📊 [useData] Impuestos result:', impuestosData?.length || 0, 'rows', impuestosError ? 'ERROR: ' + JSON.stringify(impuestosError) : '')
 
       console.log('📊 [useData] Fetching tags...')
-      const tagsPromise = supabase.from('tags').select('*').eq('user_id', user.id).order('nombre')
+      const { data: tagsData, error: tagsError } = await supabase
+        .from('tags')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('nombre')
+      console.log('📊 [useData] Tags result:', tagsData?.length || 0, 'rows', tagsError ? 'ERROR: ' + JSON.stringify(tagsError) : '')
 
       console.log('📊 [useData] Fetching metas...')
-      const metasPromise = supabase.from('metas').select('*').eq('user_id', user.id).order('created_at')
+      const { data: metasData, error: metasError } = await supabase
+        .from('metas')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at')
+      console.log('📊 [useData] Metas result:', metasData?.length || 0, 'rows', metasError ? 'ERROR: ' + JSON.stringify(metasError) : '')
 
       console.log('📊 [useData] Fetching movimientos...')
-      const movimientosPromise = supabase.from('movimientos_ahorro').select('*').eq('user_id', user.id).order('fecha', { ascending: false }).limit(20)
-
-      console.log('📊 [useData] Waiting for all queries...')
-      const [
-        { data: tarjetasData, error: tarjetasError },
-        { data: gastosData, error: gastosError },
-        { data: impuestosData, error: impuestosError },
-        { data: categoriasData, error: categoriasError },
-        { data: tagsData, error: tagsError },
-        { data: metasData, error: metasError },
-        { data: movimientosData, error: movimientosError }
-      ] = await Promise.all([
-        tarjetasPromise,
-        gastosPromise,
-        impuestosPromise,
-        categoriasPromise,
-        tagsPromise,
-        metasPromise,
-        movimientosPromise
-      ])
+      const { data: movimientosData, error: movimientosError } = await supabase
+        .from('movimientos_ahorro')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('fecha', { ascending: false })
+        .limit(20)
+      console.log('📊 [useData] Movimientos result:', movimientosData?.length || 0, 'rows', movimientosError ? 'ERROR: ' + JSON.stringify(movimientosError) : '')
 
       console.log('📊 [useData] All queries completed!')
 
