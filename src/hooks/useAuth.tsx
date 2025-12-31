@@ -150,18 +150,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    // IMPORTANT: Refresh session before update to ensure we have a valid token
-    console.log('🔐 [useAuth] updateProfile - Refreshing session first')
-    const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession()
+    // IMPORTANT: Create a fresh Supabase client to avoid stale auth state issues
+    console.log('🔐 [useAuth] updateProfile - Creating fresh Supabase client')
+    const freshClient = createClient()
 
-    if (sessionError || !currentSession) {
-      console.error('🔐 [useAuth] updateProfile - Session refresh failed:', sessionError)
-      return
-    }
-    console.log('🔐 [useAuth] updateProfile - Session refreshed successfully')
-
-    console.log('🔐 [useAuth] updateProfile - Calling supabase.update')
-    const { error } = await supabase
+    console.log('🔐 [useAuth] updateProfile - Calling supabase.update with fresh client')
+    const { error } = await freshClient
       .from('profiles')
       .update(data)
       .eq('id', user.id)
