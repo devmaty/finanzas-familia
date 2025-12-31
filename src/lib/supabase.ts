@@ -1,7 +1,15 @@
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js'
+
+let supabaseInstance: SupabaseClient | null = null
 
 export function createClient() {
-  return createSupabaseClient(
+  // Return existing instance if it exists (singleton pattern)
+  if (supabaseInstance) {
+    return supabaseInstance
+  }
+
+  // Create new instance only if none exists
+  supabaseInstance = createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -13,5 +21,7 @@ export function createClient() {
       },
     }
   )
+
+  return supabaseInstance
 }
 
