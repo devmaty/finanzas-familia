@@ -10,6 +10,7 @@ import {
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { formatMoney, getMonthName, fetchDolar } from '@/lib/utils'
+import { useData } from '@/hooks/useData'
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Resumen' },
@@ -22,11 +23,11 @@ const navItems = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, profile, loading, signOut } = useAuth()
+  const { currentMonth, changeMonth } = useData()
   const router = useRouter()
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [dolar, setDolar] = useState(0)
-  const [currentMonth, setCurrentMonth] = useState(new Date())
 
   useEffect(() => {
     if (!loading && !user) {
@@ -41,10 +42,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const handleSignOut = async () => {
     await signOut()
     router.push('/')
-  }
-
-  const changeMonth = (delta: number) => {
-    setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + delta, 1))
   }
 
   if (loading) {

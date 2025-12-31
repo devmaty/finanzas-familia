@@ -1,14 +1,61 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, createContext, useContext, ReactNode, useMemo } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useAuth } from './useAuth'
 import { Tarjeta, Gasto, Impuesto, Categoria, Tag, Meta, MovimientoAhorro } from '@/types'
 import { getMonthKey } from '@/lib/utils'
 
-export function useData() {
-  const { user } = useAuth()
-  const supabase = createClient()
+type DataContextType = {
+  tarjetas: Tarjeta[]
+  gastos: Gasto[]
+  impuestos: Impuesto[]
+  categorias: Categoria[]
+  tags: Tag[]
+  metas: Meta[]
+  movimientos: MovimientoAhorro[]
+  loading: boolean
+  currentMonth: Date
+  monthKey: string
+  fetchAll: () => Promise<void>
+  changeMonth: (delta: number) => void
+  addTarjeta: (data: Omit<Tarjeta, 'id' | 'user_id' | 'created_at'>) => Promise<{ error: any }>
+  updateTarjeta: (id: string, data: Partial<Tarjeta>) => Promise<{ error: any }>
+  deleteTarjeta: (id: string) => Promise<{ error: any }>
+  addGasto: (data: Omit<Gasto, 'id' | 'user_id' | 'created_at' | 'tarjeta' | 'categoria' | 'tags'>) => Promise<{ error: any, data?: Gasto }>
+  updateGasto: (id: string, data: Partial<Gasto>) => Promise<{ error: any }>
+  deleteGasto: (id: string) => Promise<{ error: any }>
+  addImpuesto: (data: Omit<Impuesto, 'id' | 'user_id' | 'created_at' | 'tarjeta'>) => Promise<{ error: any }>
+  updateImpuesto: (id: string, data: Partial<Impuesto>) => Promise<{ error: any }>
+  deleteImpuesto: (id: string) => Promise<{ error: any }>
+  addTag: (nombre: string) => Promise<{ error: any }>
+  deleteTag: (id: string) => Promise<{ error: any }>
+  addMeta: (data: Omit<Meta, 'id' | 'user_id' | 'created_at' | 'completada'>) => Promise<{ error: any }>
+  updateMeta: (id: string, data: Partial<Meta>) => Promise<{ error: any }>
+  deleteMeta: (id: string) => Promise<{ error: any }>
+  addMovimiento: (tipo: 'pesos' | 'usd', monto: number) => Promise<{ error: any }>
+  getGastosMes: (mes: string) => Gasto[]
+  getImpuestosMes: (mes: string) => Impuesto[]
+  getGastosNoProximoMes: (mesActual: string) => {
+    gastos: Gasto[]
+    cantidad: number
+    totalARS: number
+    totalUSD: number
+  }
+  getDiferenciaMeses: (mesActual: string, dolar: number) => {
+    actual: { ars: number; usd: number; imp: number; total: number }
+    proximo: { ars: number; usd: number; imp: number; total: number }
+    diferencia: number
+    diferenciaARS: number
+    diferenciaUSD: number
+  }
+}
+
+const DataContext = createContext<DataContextType | undefined>(undefined)
+
+export function DataProvider({ children }: { children: ReactNode }) {
+  const { user, loading: authLoading } = useAuth()
+  const supabase = useMemo(createClient, [])
   
   const [tarjetas, setTarjetas] = useState<Tarjeta[]>([])
   const [gastos, setGastos] = useState<Gasto[]>([])
@@ -21,40 +68,71 @@ export function useData() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
 
   const fetchAll = useCallback(async () => {
-    if (!user) return
     setLoading(true)
+    try {
+      if (!user) {
+        setTarjetas([])
+        setGastos([])
+        setImpuestos([])
+        setCategorias([])
+        setTags([])
+        setMetas([])
+        setMovimientos([])
+        return
+      }
 
-    const [
-      { data: tarjetasData },
-      { data: gastosData },
-      { data: impuestosData },
-      { data: categoriasData },
-      { data: tagsData },
-      { data: metasData },
-      { data: movimientosData }
-    ] = await Promise.all([
-      supabase.from('tarjetas').select('*').eq('user_id', user.id).order('created_at'),
-      supabase.from('gastos').select('*, tarjeta:tarjetas(*), categoria:categorias(*)').eq('user_id', user.id).order('fecha', { ascending: false }),
-      supabase.from('impuestos').select('*, tarjeta:tarjetas(*)').eq('user_id', user.id).order('created_at', { ascending: false }),
-      supabase.from('categorias').select('*').eq('user_id', user.id).order('nombre'),
-      supabase.from('tags').select('*').eq('user_id', user.id).order('nombre'),
-      supabase.from('metas').select('*').eq('user_id', user.id).order('created_at'),
-      supabase.from('movimientos_ahorro').select('*').eq('user_id', user.id).order('fecha', { ascending: false }).limit(20)
-    ])
+      const [
+        { data: tarjetasData },
+        { data: gastosData },
+        { data: impuestosData },
+        { data: categoriasData },
+        { data: tagsData },
+        { data: metasData },
+        { data: movimientosData }
+      ] = await Promise.all([
+        supabase.from('tarjetas').select('*').eq('user_id', user.id).order('created_at'),
+        supabase.from('gastos').select('*, tarjeta:tarjetas(*), categoria:categorias(*)').eq('user_id', user.id).order('fecha', { ascending: false }),
+        supabase.from('impuestos').select('*, tarjeta:tarjetas(*)').eq('user_id', user.id).order('created_at', { ascending: false }),
+        supabase.from('categorias').select('*').eq('user_id', user.id).order('nombre'),
+        supabase.from('tags').select('*').eq('user_id', user.id).order('nombre'),
+        supabase.from('metas').select('*').eq('user_id', user.id).order('created_at'),
+        supabase.from('movimientos_ahorro').select('*').eq('user_id', user.id).order('fecha', { ascending: false }).limit(20)
+      ])
 
-    setTarjetas(tarjetasData || [])
-    setGastos(gastosData || [])
-    setImpuestos(impuestosData || [])
-    setCategorias(categoriasData || [])
-    setTags(tagsData || [])
-    setMetas(metasData || [])
-    setMovimientos(movimientosData || [])
-    setLoading(false)
-  }, [user])
+      setTarjetas(tarjetasData || [])
+      setGastos(gastosData || [])
+      setImpuestos(impuestosData || [])
+      setCategorias(categoriasData || [])
+      setTags(tagsData || [])
+      setMetas(metasData || [])
+      setMovimientos(movimientosData || [])
+    } catch (error) {
+      console.error('Error fetching data', error)
+      setTarjetas([])
+      setGastos([])
+      setImpuestos([])
+      setCategorias([])
+      setTags([])
+      setMetas([])
+      setMovimientos([])
+    } finally {
+      setLoading(false)
+    }
+  }, [supabase, user])
 
   useEffect(() => {
+    if (authLoading) {
+      setLoading(true)
+      return
+    }
     fetchAll()
-  }, [fetchAll])
+  }, [authLoading, fetchAll])
+
+  useEffect(() => {
+    if (user) {
+      setCurrentMonth(new Date())
+    }
+  }, [user])
 
   // Tarjetas CRUD
   const addTarjeta = async (data: Omit<Tarjeta, 'id' | 'user_id' | 'created_at'>) => {
@@ -297,7 +375,7 @@ export function useData() {
     setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + delta, 1))
   }
 
-  return {
+  const value: DataContextType = {
     tarjetas, gastos, impuestos, categorias, tags, metas, movimientos,
     loading, currentMonth, monthKey: getMonthKey(currentMonth),
     fetchAll, changeMonth,
@@ -310,4 +388,18 @@ export function useData() {
     getGastosMes, getImpuestosMes,
     getGastosNoProximoMes, getDiferenciaMeses
   }
+
+  return (
+    <DataContext.Provider value={value}>
+      {children}
+    </DataContext.Provider>
+  )
+}
+
+export function useData() {
+  const context = useContext(DataContext)
+  if (!context) {
+    throw new Error('useData must be used within DataProvider')
+  }
+  return context
 }
