@@ -100,23 +100,57 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       console.log('📊 [useData] Fetching data for user:', user.id)
       const startTime = Date.now()
+
+      console.log('📊 [useData] Fetching tarjetas...')
+      const tarjetasPromise = supabase.from('tarjetas').select('*').eq('user_id', user.id).order('created_at')
+
+      console.log('📊 [useData] Fetching gastos...')
+      const gastosPromise = supabase.from('gastos').select('*, tarjeta:tarjetas(*), categoria:categorias(*)').eq('user_id', user.id).order('fecha', { ascending: false })
+
+      console.log('📊 [useData] Fetching impuestos...')
+      const impuestosPromise = supabase.from('impuestos').select('*, tarjeta:tarjetas(*)').eq('user_id', user.id).order('created_at', { ascending: false })
+
+      console.log('📊 [useData] Fetching categorias...')
+      const categoriasPromise = supabase.from('categorias').select('*').eq('user_id', user.id).order('nombre')
+
+      console.log('📊 [useData] Fetching tags...')
+      const tagsPromise = supabase.from('tags').select('*').eq('user_id', user.id).order('nombre')
+
+      console.log('📊 [useData] Fetching metas...')
+      const metasPromise = supabase.from('metas').select('*').eq('user_id', user.id).order('created_at')
+
+      console.log('📊 [useData] Fetching movimientos...')
+      const movimientosPromise = supabase.from('movimientos_ahorro').select('*').eq('user_id', user.id).order('fecha', { ascending: false }).limit(20)
+
+      console.log('📊 [useData] Waiting for all queries...')
       const [
-        { data: tarjetasData },
-        { data: gastosData },
-        { data: impuestosData },
-        { data: categoriasData },
-        { data: tagsData },
-        { data: metasData },
-        { data: movimientosData }
+        { data: tarjetasData, error: tarjetasError },
+        { data: gastosData, error: gastosError },
+        { data: impuestosData, error: impuestosError },
+        { data: categoriasData, error: categoriasError },
+        { data: tagsData, error: tagsError },
+        { data: metasData, error: metasError },
+        { data: movimientosData, error: movimientosError }
       ] = await Promise.all([
-        supabase.from('tarjetas').select('*').eq('user_id', user.id).order('created_at'),
-        supabase.from('gastos').select('*, tarjeta:tarjetas(*), categoria:categorias(*)').eq('user_id', user.id).order('fecha', { ascending: false }),
-        supabase.from('impuestos').select('*, tarjeta:tarjetas(*)').eq('user_id', user.id).order('created_at', { ascending: false }),
-        supabase.from('categorias').select('*').eq('user_id', user.id).order('nombre'),
-        supabase.from('tags').select('*').eq('user_id', user.id).order('nombre'),
-        supabase.from('metas').select('*').eq('user_id', user.id).order('created_at'),
-        supabase.from('movimientos_ahorro').select('*').eq('user_id', user.id).order('fecha', { ascending: false }).limit(20)
+        tarjetasPromise,
+        gastosPromise,
+        impuestosPromise,
+        categoriasPromise,
+        tagsPromise,
+        metasPromise,
+        movimientosPromise
       ])
+
+      console.log('📊 [useData] All queries completed!')
+
+      // Log any errors
+      if (tarjetasError) console.error('📊 [useData] Error fetching tarjetas:', tarjetasError)
+      if (gastosError) console.error('📊 [useData] Error fetching gastos:', gastosError)
+      if (impuestosError) console.error('📊 [useData] Error fetching impuestos:', impuestosError)
+      if (categoriasError) console.error('📊 [useData] Error fetching categorias:', categoriasError)
+      if (tagsError) console.error('📊 [useData] Error fetching tags:', tagsError)
+      if (metasError) console.error('📊 [useData] Error fetching metas:', metasError)
+      if (movimientosError) console.error('📊 [useData] Error fetching movimientos:', movimientosError)
 
       const elapsed = Date.now() - startTime
       console.log('📊 [useData] Data fetched successfully in', elapsed, 'ms')
@@ -130,6 +164,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setMovimientos(movimientosData || [])
     } catch (error) {
       console.error('📊 [useData] Error fetching data', error)
+      console.error('📊 [useData] Error stack:', error instanceof Error ? error.stack : 'No stack')
       setTarjetas([])
       setGastos([])
       setImpuestos([])
