@@ -134,10 +134,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Only reload if was hidden for more than 2 seconds
         if (hideDuration > 2000) {
-          console.log('👁️ [useAuth] Reloading page to refresh Supabase client')
-          // Set a flag to prevent reload loops
-          sessionStorage.setItem('just_reloaded', 'true')
-          window.location.reload()
+          console.log('👁️ [useAuth] Clearing session and forcing re-login')
+          // Clear all localStorage to force fresh session
+          localStorage.clear()
+          sessionStorage.clear()
+          // Reload to login page
+          window.location.href = '/'
         } else {
           console.log('👁️ [useAuth] Not reloading - was only hidden for', hideDuration, 'ms')
         }
@@ -146,20 +148,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // Check if we just reloaded - if so, don't reload again
-    const justReloaded = sessionStorage.getItem('just_reloaded')
-    if (justReloaded) {
-      console.log('👁️ [useAuth] Just reloaded - clearing flag and skipping reload handler temporarily')
-      sessionStorage.removeItem('just_reloaded')
-      // Don't add the visibility listener for 5 seconds after reload
-      setTimeout(() => {
-        console.log('👁️ [useAuth] Adding visibility change listener after cooldown')
-        document.addEventListener('visibilitychange', handleVisibilityChange)
-      }, 5000)
-    } else {
-      console.log('👁️ [useAuth] Adding visibility change listener immediately')
-      document.addEventListener('visibilitychange', handleVisibilityChange)
-    }
+    // Always add visibility listener with the 10-second cooldown protection built in
+    console.log('👁️ [useAuth] Adding visibility change listener')
+    document.addEventListener('visibilitychange', handleVisibilityChange)
 
     return () => {
       console.log('🔐 [useAuth] Unmounting')
