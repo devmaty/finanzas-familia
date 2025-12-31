@@ -228,7 +228,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [user])
 
   // Tarjetas CRUD
-  const addTarjeta = async (data: Omit<Tarjeta, 'id' | 'user_id' | 'created_at'>) => {
+  const addTarjeta = useCallback(async (data: Omit<Tarjeta, 'id' | 'user_id' | 'created_at'>) => {
+    console.log('💳 [useData] addTarjeta called with data:', data)
     const { data: newTarjeta, error } = await supabase
       .from('tarjetas')
       .insert({ ...data, user_id: user!.id })
@@ -236,22 +237,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
       .single()
     if (!error && newTarjeta) setTarjetas(prev => [...prev, newTarjeta])
     return { error }
-  }
+  }, [supabase, user])
 
-  const updateTarjeta = async (id: string, data: Partial<Tarjeta>) => {
+  const updateTarjeta = useCallback(async (id: string, data: Partial<Tarjeta>) => {
+    console.log('💳 [useData] updateTarjeta called for id:', id)
     const { error } = await supabase.from('tarjetas').update(data).eq('id', id)
     if (!error) setTarjetas(prev => prev.map(t => t.id === id ? { ...t, ...data } : t))
     return { error }
-  }
+  }, [supabase])
 
-  const deleteTarjeta = async (id: string) => {
+  const deleteTarjeta = useCallback(async (id: string) => {
+    console.log('💳 [useData] deleteTarjeta called for id:', id)
     const { error } = await supabase.from('tarjetas').delete().eq('id', id)
     if (!error) setTarjetas(prev => prev.filter(t => t.id !== id))
     return { error }
-  }
+  }, [supabase])
 
   // Gastos CRUD
-  const addGasto = async (data: Omit<Gasto, 'id' | 'user_id' | 'created_at' | 'tarjeta' | 'categoria' | 'tags'>) => {
+  const addGasto = useCallback(async (data: Omit<Gasto, 'id' | 'user_id' | 'created_at' | 'tarjeta' | 'categoria' | 'tags'>) => {
+    console.log('💰 [useData] addGasto called with data:', data)
     const { data: newGasto, error } = await supabase
       .from('gastos')
       .insert({ ...data, user_id: user!.id })
@@ -259,9 +263,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       .single()
     if (!error && newGasto) setGastos(prev => [newGasto, ...prev])
     return { error, data: newGasto }
-  }
+  }, [supabase, user])
 
-  const updateGasto = async (id: string, data: Partial<Gasto>) => {
+  const updateGasto = useCallback(async (id: string, data: Partial<Gasto>) => {
+    console.log('💰 [useData] updateGasto called for id:', id)
     const { error } = await supabase.from('gastos').update(data).eq('id', id)
     if (!error) {
       const { data: updated } = await supabase
@@ -272,16 +277,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (updated) setGastos(prev => prev.map(g => g.id === id ? updated : g))
     }
     return { error }
-  }
+  }, [supabase])
 
-  const deleteGasto = async (id: string) => {
+  const deleteGasto = useCallback(async (id: string) => {
+    console.log('💰 [useData] deleteGasto called for id:', id)
     const { error } = await supabase.from('gastos').delete().eq('id', id)
     if (!error) setGastos(prev => prev.filter(g => g.id !== id))
     return { error }
-  }
+  }, [supabase])
 
   // Impuestos CRUD
-  const addImpuesto = async (data: Omit<Impuesto, 'id' | 'user_id' | 'created_at' | 'tarjeta'>) => {
+  const addImpuesto = useCallback(async (data: Omit<Impuesto, 'id' | 'user_id' | 'created_at' | 'tarjeta'>) => {
+    console.log('📝 [useData] addImpuesto called with data:', data)
     const { data: newImp, error } = await supabase
       .from('impuestos')
       .insert({ ...data, user_id: user!.id })
@@ -289,9 +296,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       .single()
     if (!error && newImp) setImpuestos(prev => [newImp, ...prev])
     return { error }
-  }
+  }, [supabase, user])
 
-  const updateImpuesto = async (id: string, data: Partial<Impuesto>) => {
+  const updateImpuesto = useCallback(async (id: string, data: Partial<Impuesto>) => {
+    console.log('📝 [useData] updateImpuesto called for id:', id)
     const { error } = await supabase.from('impuestos').update(data).eq('id', id)
     if (!error) {
       const { data: updated } = await supabase
@@ -302,16 +310,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (updated) setImpuestos(prev => prev.map(i => i.id === id ? updated : i))
     }
     return { error }
-  }
+  }, [supabase])
 
-  const deleteImpuesto = async (id: string) => {
+  const deleteImpuesto = useCallback(async (id: string) => {
+    console.log('📝 [useData] deleteImpuesto called for id:', id)
     const { error } = await supabase.from('impuestos').delete().eq('id', id)
     if (!error) setImpuestos(prev => prev.filter(i => i.id !== id))
     return { error }
-  }
+  }, [supabase])
 
   // Tags CRUD
-  const addTag = async (nombre: string) => {
+  const addTag = useCallback(async (nombre: string) => {
+    console.log('🏷️ [useData] addTag called with nombre:', nombre)
     const { data: newTag, error } = await supabase
       .from('tags')
       .insert({ nombre, user_id: user!.id })
@@ -319,16 +329,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
       .single()
     if (!error && newTag) setTags(prev => [...prev, newTag])
     return { error }
-  }
+  }, [supabase, user])
 
-  const deleteTag = async (id: string) => {
+  const deleteTag = useCallback(async (id: string) => {
+    console.log('🏷️ [useData] deleteTag called for id:', id)
     const { error } = await supabase.from('tags').delete().eq('id', id)
     if (!error) setTags(prev => prev.filter(t => t.id !== id))
     return { error }
-  }
+  }, [supabase])
 
   // Metas CRUD
-  const addMeta = async (data: Omit<Meta, 'id' | 'user_id' | 'created_at' | 'completada'>) => {
+  const addMeta = useCallback(async (data: Omit<Meta, 'id' | 'user_id' | 'created_at' | 'completada'>) => {
+    console.log('🎯 [useData] addMeta called with data:', data)
     const { data: newMeta, error } = await supabase
       .from('metas')
       .insert({ ...data, user_id: user!.id })
@@ -336,34 +348,37 @@ export function DataProvider({ children }: { children: ReactNode }) {
       .single()
     if (!error && newMeta) setMetas(prev => [...prev, newMeta])
     return { error }
-  }
+  }, [supabase, user])
 
-  const updateMeta = async (id: string, data: Partial<Meta>) => {
+  const updateMeta = useCallback(async (id: string, data: Partial<Meta>) => {
+    console.log('🎯 [useData] updateMeta called for id:', id)
     const { error } = await supabase.from('metas').update(data).eq('id', id)
     if (!error) setMetas(prev => prev.map(m => m.id === id ? { ...m, ...data } : m))
     return { error }
-  }
+  }, [supabase])
 
-  const deleteMeta = async (id: string) => {
+  const deleteMeta = useCallback(async (id: string) => {
+    console.log('🎯 [useData] deleteMeta called for id:', id)
     const { error } = await supabase.from('metas').delete().eq('id', id)
     if (!error) setMetas(prev => prev.filter(m => m.id !== id))
     return { error }
-  }
+  }, [supabase])
 
   // Ahorros
-  const addMovimiento = async (tipo: 'pesos' | 'usd', monto: number) => {
+  const addMovimiento = useCallback(async (tipo: 'pesos' | 'usd', monto: number) => {
+    console.log('💵 [useData] addMovimiento called - tipo:', tipo, 'monto:', monto)
     const { error } = await supabase
       .from('movimientos_ahorro')
       .insert({ tipo, monto, user_id: user!.id })
-    
+
     if (!error) {
       fetchAll()
     }
     return { error }
-  }
+  }, [supabase, user, fetchAll])
 
   // CORREGIDO: Filtrar gastos por mes correctamente
-  const getGastosMes = (mes: string) => {
+  const getGastosMes = useCallback((mes: string) => {
     return gastos.filter(g => {
       // Gastos fijos siempre aparecen (pero solo si tienen ese mes_facturacion o anterior)
       if (g.es_fijo) {
@@ -372,7 +387,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const mesConsulta = new Date(mes + '-01')
         return mesFact <= mesConsulta
       }
-      
+
       // Gastos en cuotas
       if (g.cuotas > 1) {
         const start = new Date(g.mes_facturacion + '-01')
@@ -380,30 +395,30 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const diff = (current.getFullYear() - start.getFullYear()) * 12 + current.getMonth() - start.getMonth()
         return diff >= 0 && diff < g.cuotas
       }
-      
+
       // Gastos normales: solo en su mes de facturación
       return g.mes_facturacion === mes
     })
-  }
+  }, [gastos])
 
-  const getImpuestosMes = (mes: string) => {
+  const getImpuestosMes = useCallback((mes: string) => {
     return impuestos.filter(i => i.mes === mes)
-  }
+  }, [impuestos])
 
   // NUEVO: Calcular gastos que NO vienen el próximo mes
-  const getGastosNoProximoMes = (mesActual: string) => {
+  const getGastosNoProximoMes = useCallback((mesActual: string) => {
     const gastosActuales = getGastosMes(mesActual)
     const nextMonth = new Date(mesActual + '-01')
     nextMonth.setMonth(nextMonth.getMonth() + 1)
     const nextMonthKey = getMonthKey(nextMonth)
     const gastosProximo = getGastosMes(nextMonthKey)
-    
+
     // Gastos que están en el mes actual pero NO en el próximo (excluyendo fijos)
     const noVienen = gastosActuales.filter(g => {
       if (g.es_fijo) return false // Los fijos siempre vienen
       return !gastosProximo.some(gp => gp.id === g.id)
     })
-    
+
     let totalARS = 0
     let totalUSD = 0
     noVienen.forEach(g => {
@@ -411,27 +426,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (g.moneda === 'USD') totalUSD += monto
       else totalARS += monto
     })
-    
+
     return {
       gastos: noVienen,
       cantidad: noVienen.length,
       totalARS,
       totalUSD
     }
-  }
+  }, [getGastosMes])
 
   // NUEVO: Calcular diferencia entre mes actual y próximo
-  const getDiferenciaMeses = (mesActual: string, dolar: number) => {
+  const getDiferenciaMeses = useCallback((mesActual: string, dolar: number) => {
     const gastosActuales = getGastosMes(mesActual)
     const impuestosActuales = getImpuestosMes(mesActual)
-    
+
     const nextMonth = new Date(mesActual + '-01')
     nextMonth.setMonth(nextMonth.getMonth() + 1)
     const nextMonthKey = getMonthKey(nextMonth)
-    
+
     const gastosProximo = getGastosMes(nextMonthKey)
     const impuestosProximo = getImpuestosMes(nextMonthKey)
-    
+
     // Total actual
     let totalActualARS = 0
     let totalActualUSD = 0
@@ -441,7 +456,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       else totalActualARS += monto
     })
     const totalImpActual = impuestosActuales.reduce((s, i) => s + i.monto, 0)
-    
+
     // Total próximo
     let totalProximoARS = 0
     let totalProximoUSD = 0
@@ -451,10 +466,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       else totalProximoARS += monto
     })
     const totalImpProximo = impuestosProximo.reduce((s, i) => s + i.monto, 0)
-    
+
     const totalActual = totalActualARS + totalImpActual + (totalActualUSD * dolar)
     const totalProximo = totalProximoARS + totalImpProximo + (totalProximoUSD * dolar)
-    
+
     return {
       actual: { ars: totalActualARS, usd: totalActualUSD, imp: totalImpActual, total: totalActual },
       proximo: { ars: totalProximoARS, usd: totalProximoUSD, imp: totalImpProximo, total: totalProximo },
@@ -462,11 +477,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       diferenciaARS: totalActualARS - totalProximoARS,
       diferenciaUSD: totalActualUSD - totalProximoUSD
     }
-  }
+  }, [getGastosMes, getImpuestosMes])
 
-  const changeMonth = (delta: number) => {
+  const changeMonth = useCallback((delta: number) => {
     setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + delta, 1))
-  }
+  }, [])
 
   const value: DataContextType = useMemo(() => {
     console.log('📊 [useData] Creating context value - loading:', loading, 'tarjetas:', tarjetas.length, 'gastos:', gastos.length)
