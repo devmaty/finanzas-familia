@@ -54,7 +54,7 @@ type DataContextType = {
 const DataContext = createContext<DataContextType | undefined>(undefined)
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const supabase = useMemo(() => createClient(), [])
   
   const [tarjetas, setTarjetas] = useState<Tarjeta[]>([])
@@ -68,6 +68,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
 
   const fetchAll = useCallback(async () => {
+    // Esperar a que se resuelva el estado de autenticación para evitar ciclos de carga
+    if (authLoading) {
+      setLoading(true)
+      return
+    }
+
     setLoading(true)
     try {
       if (!user) {
@@ -118,7 +124,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }, [supabase, user])
+  }, [authLoading, supabase, user])
 
   useEffect(() => {
     fetchAll()
