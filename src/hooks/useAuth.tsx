@@ -45,10 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true
-    const mountTime = Date.now()
-    console.log('🔐 [useAuth] Initial mount at', mountTime)
-    console.log('👁️ [useAuth] Document visibility on mount:', document.visibilityState)
-    console.log('👁️ [useAuth] Just reloaded flag:', sessionStorage.getItem('just_reloaded'))
+    console.log('🔐 [useAuth] Initial mount')
 
     const getSession = async () => {
       console.log('🔐 [useAuth] Getting session...')
@@ -109,70 +106,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
 
-    // Force page reload when returning to tab to avoid stale Supabase client issues
-    // Only reload if page was hidden for more than 2 seconds to avoid reload loops
-    let wasHidden = false
-    let hideTime = 0
-    const handleVisibilityChange = () => {
-      const now = Date.now()
-      const timeSinceMount = now - mountTime
-      console.log('👁️ [useAuth] Visibility changed to:', document.visibilityState, 'at', timeSinceMount, 'ms after mount')
-
-      // Prevent reloads within first 10 seconds of page load to avoid loops
-      if (timeSinceMount < 10000) {
-        console.log('👁️ [useAuth] Ignoring visibility change - too soon after mount (', timeSinceMount, 'ms )')
-        return
-      }
-
-      if (document.visibilityState === 'hidden') {
-        wasHidden = true
-        hideTime = now
-        console.log('👁️ [useAuth] Tab hidden - will check health on return')
-      } else if (document.visibilityState === 'visible' && wasHidden) {
-        const hideDuration = now - hideTime
-        console.log('👁️ [useAuth] Tab visible again - was hidden for', Math.round(hideDuration/1000), 'seconds')
-
-        // If was hidden for more than 3 seconds, check if Supabase client is still working
-        if (hideDuration > 3000) {
-          console.log('👁️ [useAuth] Testing Supabase client health...')
-
-          // Try a simple query with a 3-second timeout
-          const healthCheck = supabase.auth.getSession()
-          const timeout = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Health check timeout')), 3000)
-          )
-
-          Promise.race([healthCheck, timeout])
-            .then(() => {
-              console.log('👁️ [useAuth] ✅ Supabase client is healthy')
-            })
-            .catch((error) => {
-              console.log('👁️ [useAuth] ❌ Supabase client is broken - forcing logout and reload')
-              console.error('Health check error:', error)
-              // Client is broken - don't wait for signOut (it might hang too)
-              // Just clear everything and reload immediately
-              localStorage.clear()
-              sessionStorage.clear()
-              console.log('👁️ [useAuth] Storage cleared - reloading now...')
-              window.location.reload()
-            })
-        } else {
-          console.log('👁️ [useAuth] Short tab switch - no health check needed')
-        }
-      } else if (document.visibilityState === 'visible' && !wasHidden) {
-        console.log('👁️ [useAuth] Tab became visible but was never hidden - ignoring')
-      }
-    }
-
-    // Always add visibility listener with the 10-second cooldown protection built in
-    console.log('👁️ [useAuth] Adding visibility change listener')
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-
     return () => {
       console.log('🔐 [useAuth] Unmounting')
       mounted = false
       subscription.unsubscribe()
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [])
 
