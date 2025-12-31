@@ -134,12 +134,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Only reload if was hidden for more than 2 seconds
         if (hideDuration > 2000) {
-          console.log('👁️ [useAuth] Clearing session and forcing re-login')
-          // Clear all localStorage to force fresh session
-          localStorage.clear()
-          sessionStorage.clear()
-          // Reload to login page
-          window.location.href = '/'
+          console.log('👁️ [useAuth] Session corrupted - signing out and forcing full reload')
+          // Sign out via Supabase to clean up client state
+          supabase.auth.signOut().then(() => {
+            // Clear all storage
+            localStorage.clear()
+            sessionStorage.clear()
+            // Force full page reload to reset everything
+            window.location.reload()
+          })
         } else {
           console.log('👁️ [useAuth] Not reloading - was only hidden for', hideDuration, 'ms')
         }
