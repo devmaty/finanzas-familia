@@ -488,7 +488,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     tarjetas, gastos, impuestos, categorias, tags, metas, movimientos,
-    loading, currentMonth, fetchAll
+    loading, currentMonth
   ])
 
   return (
