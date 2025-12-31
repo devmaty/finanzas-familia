@@ -68,7 +68,46 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
 
   const fetchAll = useCallback(async () => {
-    if (!user) {
+    setLoading(true)
+    try {
+      if (!user) {
+        setTarjetas([])
+        setGastos([])
+        setImpuestos([])
+        setCategorias([])
+        setTags([])
+        setMetas([])
+        setMovimientos([])
+        return
+      }
+
+      const [
+        { data: tarjetasData },
+        { data: gastosData },
+        { data: impuestosData },
+        { data: categoriasData },
+        { data: tagsData },
+        { data: metasData },
+        { data: movimientosData }
+      ] = await Promise.all([
+        supabase.from('tarjetas').select('*').eq('user_id', user.id).order('created_at'),
+        supabase.from('gastos').select('*, tarjeta:tarjetas(*), categoria:categorias(*)').eq('user_id', user.id).order('fecha', { ascending: false }),
+        supabase.from('impuestos').select('*, tarjeta:tarjetas(*)').eq('user_id', user.id).order('created_at', { ascending: false }),
+        supabase.from('categorias').select('*').eq('user_id', user.id).order('nombre'),
+        supabase.from('tags').select('*').eq('user_id', user.id).order('nombre'),
+        supabase.from('metas').select('*').eq('user_id', user.id).order('created_at'),
+        supabase.from('movimientos_ahorro').select('*').eq('user_id', user.id).order('fecha', { ascending: false }).limit(20)
+      ])
+
+      setTarjetas(tarjetasData || [])
+      setGastos(gastosData || [])
+      setImpuestos(impuestosData || [])
+      setCategorias(categoriasData || [])
+      setTags(tagsData || [])
+      setMetas(metasData || [])
+      setMovimientos(movimientosData || [])
+    } catch (error) {
+      console.error('Error fetching data', error)
       setTarjetas([])
       setGastos([])
       setImpuestos([])
@@ -76,37 +115,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setTags([])
       setMetas([])
       setMovimientos([])
+    } finally {
       setLoading(false)
-      return
     }
-    setLoading(true)
-
-    const [
-      { data: tarjetasData },
-      { data: gastosData },
-      { data: impuestosData },
-      { data: categoriasData },
-      { data: tagsData },
-      { data: metasData },
-      { data: movimientosData }
-    ] = await Promise.all([
-      supabase.from('tarjetas').select('*').eq('user_id', user.id).order('created_at'),
-      supabase.from('gastos').select('*, tarjeta:tarjetas(*), categoria:categorias(*)').eq('user_id', user.id).order('fecha', { ascending: false }),
-      supabase.from('impuestos').select('*, tarjeta:tarjetas(*)').eq('user_id', user.id).order('created_at', { ascending: false }),
-      supabase.from('categorias').select('*').eq('user_id', user.id).order('nombre'),
-      supabase.from('tags').select('*').eq('user_id', user.id).order('nombre'),
-      supabase.from('metas').select('*').eq('user_id', user.id).order('created_at'),
-      supabase.from('movimientos_ahorro').select('*').eq('user_id', user.id).order('fecha', { ascending: false }).limit(20)
-    ])
-
-    setTarjetas(tarjetasData || [])
-    setGastos(gastosData || [])
-    setImpuestos(impuestosData || [])
-    setCategorias(categoriasData || [])
-    setTags(tagsData || [])
-    setMetas(metasData || [])
-    setMovimientos(movimientosData || [])
-    setLoading(false)
   }, [supabase, user])
 
   useEffect(() => {
