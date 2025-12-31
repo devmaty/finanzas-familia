@@ -124,10 +124,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.log('📊 [useData] Setting loading to FALSE')
       setLoading(false)
     }
-  }, [supabase, user])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase, user?.id])
 
   useEffect(() => {
-    console.log('📊 [useData] useEffect triggered - authLoading:', authLoading)
+    console.log('📊 [useData] useEffect triggered - authLoading:', authLoading, 'user:', user?.id || 'NULL')
     if (authLoading) {
       console.log('📊 [useData] Auth still loading - Setting loading to TRUE')
       setLoading(true)
@@ -135,7 +136,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
     console.log('📊 [useData] Auth finished - Calling fetchAll')
     fetchAll()
-  }, [authLoading, fetchAll])
+  }, [authLoading, user?.id, fetchAll])
 
   useEffect(() => {
     if (user) {
