@@ -127,26 +127,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (document.visibilityState === 'hidden') {
         wasHidden = true
         hideTime = now
-        console.log('👁️ [useAuth] Tab hidden - marking for reload on return')
+        console.log('👁️ [useAuth] Tab hidden - will check health on return')
       } else if (document.visibilityState === 'visible' && wasHidden) {
         const hideDuration = now - hideTime
-        console.log('👁️ [useAuth] Tab visible again - was hidden for', hideDuration, 'ms')
+        console.log('👁️ [useAuth] Tab visible again - was hidden for', Math.round(hideDuration/1000), 'seconds')
 
-        // Only logout and reload if was hidden for more than 5 minutes
-        // This prevents logout on quick tab switches (checking email, etc.)
-        // but forces fresh session if away for a long time
-        if (hideDuration > 300000) {
-          console.log('👁️ [useAuth] Tab was hidden for', Math.round(hideDuration/1000), 'seconds - forcing logout and reload')
-          // Sign out via Supabase to clean up client state
-          supabase.auth.signOut().then(() => {
-            // Clear all storage
-            localStorage.clear()
-            sessionStorage.clear()
-            // Force full page reload to reset everything
-            window.location.reload()
-          })
+        // If was hidden for more than 10 seconds, check if Supabase client is still working
+        if (hideDuration > 10000) {
+          console.log('👁️ [useAuth] Testing Supabase client health...')
+
+          // Try a simple query with a 3-second timeout
+          const healthCheck = supabase.auth.getSession()
+          const timeout = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Health check timeout')), 3000)
+          )
+
+          Promise.race([healthCheck, timeout])
+            .then(() => {
+              console.log('👁️ [useAuth] ✅ Supabase client is healthy')
+            })
+            .catch((error) => {
+              console.log('👁️ [useAuth] ❌ Supabase client is broken - forcing logout and reload')
+              console.error('Health check error:', error)
+              // Client is broken, force logout and reload
+              supabase.auth.signOut().then(() => {
+                localStorage.clear()
+                sessionStorage.clear()
+                window.location.reload()
+              })
+            })
         } else {
-          console.log('👁️ [useAuth] Tab was only hidden for', Math.round(hideDuration/1000), 'seconds - no logout needed')
+          console.log('👁️ [useAuth] Short tab switch - no health check needed')
         }
       } else if (document.visibilityState === 'visible' && !wasHidden) {
         console.log('👁️ [useAuth] Tab became visible but was never hidden - ignoring')
