@@ -154,19 +154,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log('🔐 [useAuth] updateProfile - Creating fresh Supabase client')
     const freshClient = createClient()
 
-    console.log('🔐 [useAuth] updateProfile - Calling supabase.update with fresh client')
-    const { error } = await freshClient
-      .from('profiles')
-      .update(data)
-      .eq('id', user.id)
+    // Create an AbortController with a 5 second timeout
+    const abortController = new AbortController()
+    const timeoutId = setTimeout(() => {
+      console.error('🔐 [useAuth] updateProfile - TIMEOUT after 5 seconds!')
+      abortController.abort()
+    }, 5000)
 
-    console.log('🔐 [useAuth] updateProfile - Update result, error:', error)
+    try {
+      console.log('🔐 [useAuth] updateProfile - Calling supabase.update with fresh client and 5s timeout')
+      const { error } = await freshClient
+        .from('profiles')
+        .update(data)
+        .eq('id', user.id)
+        .abortSignal(abortController.signal)
 
-    if (!error) {
-      console.log('🔐 [useAuth] updateProfile - Success, updating local state')
-      setProfile(prev => prev ? { ...prev, ...data } : null)
-    } else {
-      console.error('🔐 [useAuth] updateProfile - ERROR:', error)
+      clearTimeout(timeoutId)
+      console.log('🔐 [useAuth] updateProfile - Update result, error:', error)
+
+      if (!error) {
+        console.log('🔐 [useAuth] updateProfile - Success, updating local state')
+        setProfile(prev => prev ? { ...prev, ...data } : null)
+      } else {
+        console.error('🔐 [useAuth] updateProfile - ERROR:', error)
+      }
+    } catch (err) {
+      clearTimeout(timeoutId)
+      console.error('🔐 [useAuth] updateProfile - EXCEPTION:', err)
+      console.error('🔐 [useAuth] updateProfile - Exception name:', (err as Error).name)
+      console.error('🔐 [useAuth] updateProfile - Exception message:', (err as Error).message)
     }
 
     console.log('🔐 [useAuth] updateProfile - FINISHED')
