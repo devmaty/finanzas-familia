@@ -141,51 +141,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const updateProfile = async (data: Partial<Profile>) => {
-    console.log('🔐 [useAuth] updateProfile CALLED')
-    console.log('🔐 [useAuth] updateProfile - user:', user?.id || 'NULL')
-    console.log('🔐 [useAuth] updateProfile - data:', data)
+    if (!user) return
 
-    if (!user) {
-      console.log('🔐 [useAuth] updateProfile - NO USER, returning')
-      return
+    const { error } = await supabase
+      .from('profiles')
+      .update(data)
+      .eq('id', user.id)
+
+    if (!error) {
+      setProfile(prev => prev ? { ...prev, ...data } : null)
     }
-
-    // IMPORTANT: Create a fresh Supabase client to avoid stale auth state issues
-    console.log('🔐 [useAuth] updateProfile - Creating fresh Supabase client')
-    const freshClient = createClient()
-
-    // Create an AbortController with a 5 second timeout
-    const abortController = new AbortController()
-    const timeoutId = setTimeout(() => {
-      console.error('🔐 [useAuth] updateProfile - TIMEOUT after 5 seconds!')
-      abortController.abort()
-    }, 5000)
-
-    try {
-      console.log('🔐 [useAuth] updateProfile - Calling supabase.update with fresh client and 5s timeout')
-      const { error } = await freshClient
-        .from('profiles')
-        .update(data)
-        .eq('id', user.id)
-        .abortSignal(abortController.signal)
-
-      clearTimeout(timeoutId)
-      console.log('🔐 [useAuth] updateProfile - Update result, error:', error)
-
-      if (!error) {
-        console.log('🔐 [useAuth] updateProfile - Success, updating local state')
-        setProfile(prev => prev ? { ...prev, ...data } : null)
-      } else {
-        console.error('🔐 [useAuth] updateProfile - ERROR:', error)
-      }
-    } catch (err) {
-      clearTimeout(timeoutId)
-      console.error('🔐 [useAuth] updateProfile - EXCEPTION:', err)
-      console.error('🔐 [useAuth] updateProfile - Exception name:', (err as Error).name)
-      console.error('🔐 [useAuth] updateProfile - Exception message:', (err as Error).message)
-    }
-
-    console.log('🔐 [useAuth] updateProfile - FINISHED')
   }
 
   return (
