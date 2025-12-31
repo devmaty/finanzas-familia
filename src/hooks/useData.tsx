@@ -273,7 +273,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error('💰 [useData] addGasto ERROR:', error)
         console.error('💰 [useData] addGasto ERROR details:', JSON.stringify(error, null, 2))
-        return { error, data: null }
+        return { error, data: undefined }
       }
 
       if (newGasto) {
@@ -284,7 +284,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       return { error: null, data: newGasto }
     } catch (err) {
       console.error('💰 [useData] addGasto EXCEPTION:', err)
-      return { error: err as any, data: null }
+      return { error: err as any, data: undefined }
     }
   }, [supabase, user?.id])
 
