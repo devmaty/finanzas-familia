@@ -9,8 +9,13 @@ import confetti from 'canvas-confetti'
 import { Meta } from '@/types'
 
 export default function AhorrosPage() {
+  console.log('🟢🟢🟢 [AhorrosPage] COMPONENT RENDER')
+
   const { profile, updateProfile } = useAuth()
   const { metas, movimientos, addMeta, updateMeta, deleteMeta, addMovimiento } = useData()
+
+  console.log('🟢🟢🟢 [AhorrosPage] addMovimiento function reference:', addMovimiento)
+
   const [dolar, setDolar] = useState(1050)
   const [showMetaModal, setShowMetaModal] = useState(false)
   const [editingMeta, setEditingMeta] = useState<Meta | null>(null)

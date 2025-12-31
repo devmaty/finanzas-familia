@@ -7,12 +7,16 @@ import { Plus, Search, Edit2, Trash2, Pin, X } from 'lucide-react'
 import { Gasto } from '@/types'
 
 export default function GastosPage() {
-  const { 
+  console.log('🔵🔵🔵 [GastosPage] COMPONENT RENDER')
+
+  const {
     tarjetas, categorias, tags,
     currentMonth, monthKey, getGastosMes, getImpuestosMes,
     addGasto, updateGasto, deleteGasto,
     addImpuesto, updateImpuesto, deleteImpuesto
   } = useData()
+
+  console.log('🔵🔵🔵 [GastosPage] addGasto function reference:', addGasto)
 
   const [showGastoModal, setShowGastoModal] = useState(false)
   const [showImpModal, setShowImpModal] = useState(false)
