@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useData } from '@/hooks/useData'
 import { useAuth } from '@/hooks/useAuth'
-import { formatMoney, getMonthName, fetchDolar, getTagClass } from '@/lib/utils'
-import { Download, TrendingUp, CreditCard, Receipt, Pin, DollarSign, TrendingDown, ArrowRight } from 'lucide-react'
+import { formatMoney, getMonthName, fetchDolar, getTagClass, getMonthKey } from '@/lib/utils'
+import { Download, TrendingUp, CreditCard, Receipt, Pin, DollarSign, TrendingDown, ArrowRight, Calendar } from 'lucide-react'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
 import { Doughnut } from 'react-chartjs-2'
 
@@ -13,8 +13,8 @@ ChartJS.register(ArcElement, Tooltip, Legend)
 export default function DashboardPage() {
   const { profile } = useAuth()
   const { 
-    tarjetas, loading, currentMonth, monthKey, 
-    getGastosMes, getImpuestosMes, getGastosNoProximoMes, getDiferenciaMeses 
+    tarjetas, gastos, loading, currentMonth, monthKey, 
+    getGastosMes, getImpuestosMes
   } = useData()
   const [dolar, setDolar] = useState(1050)
 
@@ -32,21 +32,66 @@ export default function DashboardPage() {
 
   const gastosMes = getGastosMes(monthKey)
   const impuestosMes = getImpuestosMes(monthKey)
-  const noProximoMes = getGastosNoProximoMes(monthKey)
-  const diferencia = getDiferenciaMeses(monthKey, dolar)
 
-  // Calcular totales
-  let totalARS = 0, totalUSD = 0, totalFijos = 0
+  // Próximo mes
+  const nextMonth = new Date(currentMonth)
+  nextMonth.setMonth(nextMonth.getMonth() + 1)
+  const nextMonthKey = getMonthKey(nextMonth)
+  const gastosProximoMes = getGastosMes(nextMonthKey)
+  const impuestosProximoMes = getImpuestosMes(nextMonthKey)
+
+  // Calcular totales MES ACTUAL
+  let totalARS = 0, totalUSD = 0, totalFijos = 0, totalFijosUSD = 0
   gastosMes.forEach(g => {
     const monto = g.cuotas > 1 ? g.monto / g.cuotas : g.monto
-    if (g.moneda === 'USD') totalUSD += monto
-    else totalARS += monto
-    if (g.es_fijo && g.moneda === 'ARS') totalFijos += monto
+    if (g.moneda === 'USD') {
+      totalUSD += monto
+      if (g.es_fijo) totalFijosUSD += monto
+    } else {
+      totalARS += monto
+      if (g.es_fijo) totalFijos += monto
+    }
   })
   
   const totalImpuestos = impuestosMes.reduce((s, i) => s + i.monto, 0)
   const totalPagar = totalARS + totalImpuestos
   const usdEnPesos = totalUSD * dolar
+
+  // Calcular totales PRÓXIMO MES
+  let proximoARS = 0, proximoUSD = 0, proximoFijosARS = 0, proximoFijosUSD = 0
+  gastosProximoMes.forEach(g => {
+    const monto = g.cuotas > 1 ? g.monto / g.cuotas : g.monto
+    if (g.moneda === 'USD') {
+      proximoUSD += monto
+      if (g.es_fijo) proximoFijosUSD += monto
+    } else {
+      proximoARS += monto
+      if (g.es_fijo) proximoFijosARS += monto
+    }
+  })
+  const proximoImpuestos = impuestosProximoMes.reduce((s, i) => s + i.monto, 0)
+
+  // GASTOS QUE TERMINAN ESTE MES (no están en próximo mes, excluyendo fijos)
+  const gastosTerminan = gastosMes.filter(g => {
+    if (g.es_fijo) return false
+    return !gastosProximoMes.some(gp => gp.id === g.id)
+  })
+
+  let terminanARS = 0, terminanUSD = 0
+  gastosTerminan.forEach(g => {
+    const monto = g.cuotas > 1 ? g.monto / g.cuotas : g.monto
+    if (g.moneda === 'USD') terminanUSD += monto
+    else terminanARS += monto
+  })
+
+  // GASTOS FIJOS QUE QUEDAN PARA PRÓXIMO MES
+  const fijosSiguenARS = proximoFijosARS
+  const fijosSiguenUSD = proximoFijosUSD
+
+  // DIFERENCIAS
+  const diferenciaARS = totalARS - proximoARS
+  const diferenciaUSD = totalUSD - proximoUSD
+  const diferenciaTotal = (totalARS + totalImpuestos + (totalUSD * dolar)) - (proximoARS + proximoImpuestos + (proximoUSD * dolar))
 
   // Budget check (solo si está habilitado)
   const budgetARS = profile?.budget_ars || 0
@@ -173,59 +218,92 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Gastos que NO vienen próximo mes */}
-      {noProximoMes.cantidad > 0 && (
-        <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingDown className="w-5 h-5 text-emerald-600" />
-            <span className="font-bold text-emerald-800">💰 No vienen el próximo mes</span>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-emerald-700">{noProximoMes.cantidad}</div>
-              <div className="text-sm text-emerald-600">Gastos terminan</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-emerald-700">{formatMoney(noProximoMes.totalARS)}</div>
-              <div className="text-sm text-emerald-600">Ahorro ARS</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-emerald-700">{formatMoney(noProximoMes.totalUSD, 'USD')}</div>
-              <div className="text-sm text-emerald-600">Ahorro USD</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-emerald-700">{formatMoney(noProximoMes.totalARS + (noProximoMes.totalUSD * dolar))}</div>
-              <div className="text-sm text-emerald-600">Total en $</div>
-            </div>
-          </div>
+      {/* ========== PROYECCIÓN PRÓXIMO MES - MEJORADA ========== */}
+      <div className="card p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Calendar className="w-5 h-5 text-indigo-600" />
+          <h3 className="font-bold text-lg">Proyección {getMonthName(nextMonth)}</h3>
         </div>
-      )}
 
-      {/* Comparación mes actual vs próximo */}
-      {diferencia.actual.total > 0 && (
-        <div className="bg-slate-100 rounded-2xl p-5">
-          <div className="font-bold mb-4 flex items-center gap-2">
-            <ArrowRight className="w-5 h-5" />
-            Proyección próximo mes
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl p-4 text-center">
-              <div className="text-sm text-slate-500 mb-1">Este mes</div>
-              <div className="text-xl font-bold">{formatMoney(diferencia.actual.total)}</div>
+        {/* Gastos que TERMINAN este mes */}
+        {gastosTerminan.length > 0 && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4">
+            <div className="font-bold text-emerald-800 mb-3">✅ Gastos que terminan este mes ({gastosTerminan.length})</div>
+            <div className="space-y-2 mb-3 max-h-32 overflow-y-auto">
+              {gastosTerminan.map(g => {
+                const monto = g.cuotas > 1 ? g.monto / g.cuotas : g.monto
+                return (
+                  <div key={g.id} className="flex justify-between text-sm bg-white rounded-lg p-2">
+                    <span>{g.descripcion}</span>
+                    <span className={`font-semibold ${g.moneda === 'USD' ? 'text-emerald-600' : ''}`}>
+                      {formatMoney(monto, g.moneda)}
+                    </span>
+                  </div>
+                )
+              })}
             </div>
-            <div className="bg-white rounded-xl p-4 text-center">
-              <div className="text-sm text-slate-500 mb-1">Próximo mes</div>
-              <div className="text-xl font-bold">{formatMoney(diferencia.proximo.total)}</div>
-            </div>
-            <div className={`rounded-xl p-4 text-center ${diferencia.diferencia > 0 ? 'bg-emerald-100' : 'bg-red-100'}`}>
-              <div className="text-sm text-slate-500 mb-1">Diferencia</div>
-              <div className={`text-xl font-bold ${diferencia.diferencia > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                {diferencia.diferencia > 0 ? '-' : '+'}{formatMoney(Math.abs(diferencia.diferencia))}
+            <div className="grid grid-cols-2 gap-4 pt-3 border-t border-emerald-200">
+              <div className="text-center">
+                <div className="text-xs text-emerald-600">Ahorro ARS</div>
+                <div className="font-bold text-emerald-700">{formatMoney(terminanARS)}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-emerald-600">Ahorro USD</div>
+                <div className="font-bold text-emerald-700">{formatMoney(terminanUSD, 'USD')}</div>
               </div>
             </div>
           </div>
+        )}
+
+        {/* Gastos FIJOS que continúan */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+          <div className="font-bold text-blue-800 mb-3">📌 Gastos fijos próximo mes</div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center">
+              <div className="text-xs text-blue-600">Fijos ARS</div>
+              <div className="font-bold text-blue-700">{formatMoney(fijosSiguenARS)}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xs text-blue-600">Fijos USD</div>
+              <div className="font-bold text-blue-700">{formatMoney(fijosSiguenUSD, 'USD')}</div>
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* Comparación y Diferencia */}
+        <div className="bg-slate-100 rounded-xl p-4">
+          <div className="font-bold text-slate-700 mb-3">📊 Comparación de gastos</div>
+          <div className="grid grid-cols-3 gap-3 mb-3">
+            <div className="bg-white rounded-lg p-3 text-center">
+              <div className="text-xs text-slate-500">Este mes</div>
+              <div className="font-bold">{formatMoney(totalARS + totalImpuestos)}</div>
+              <div className="text-xs text-emerald-600">{formatMoney(totalUSD, 'USD')}</div>
+            </div>
+            <div className="bg-white rounded-lg p-3 text-center">
+              <div className="text-xs text-slate-500">Próximo mes</div>
+              <div className="font-bold">{formatMoney(proximoARS + proximoImpuestos)}</div>
+              <div className="text-xs text-emerald-600">{formatMoney(proximoUSD, 'USD')}</div>
+            </div>
+            <div className={`rounded-lg p-3 text-center ${diferenciaTotal > 0 ? 'bg-emerald-100' : 'bg-red-100'}`}>
+              <div className="text-xs text-slate-500">Diferencia</div>
+              <div className={`font-bold ${diferenciaTotal > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {diferenciaTotal > 0 ? '-' : '+'}{formatMoney(Math.abs(diferenciaTotal))}
+              </div>
+              <div className={`text-xs ${diferenciaUSD > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {diferenciaUSD > 0 ? '-' : '+'}{formatMoney(Math.abs(diferenciaUSD), 'USD')}
+              </div>
+            </div>
+          </div>
+          <div className="text-xs text-slate-500 text-center">
+            {diferenciaTotal > 0 
+              ? `Vas a gastar ${formatMoney(diferenciaTotal)} menos el próximo mes 🎉` 
+              : diferenciaTotal < 0 
+                ? `Vas a gastar ${formatMoney(Math.abs(diferenciaTotal))} más el próximo mes ⚠️`
+                : 'Mismo gasto el próximo mes'
+            }
+          </div>
+        </div>
+      </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
@@ -268,6 +346,7 @@ export default function DashboardPage() {
           </div>
           <div className="text-xs text-slate-500 font-semibold uppercase">Fijos</div>
           <div className="text-xl font-bold text-purple-600">{formatMoney(totalFijos)}</div>
+          <div className="text-xs text-slate-500">{formatMoney(totalFijosUSD, 'USD')}</div>
         </div>
       </div>
 

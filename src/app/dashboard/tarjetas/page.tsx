@@ -3,13 +3,14 @@
 import { useState } from 'react'
 import { useData } from '@/hooks/useData'
 import { getCardTypeClass } from '@/lib/utils'
-import { Plus, Edit2, Trash2, X } from 'lucide-react'
+import { Plus, Edit2, Trash2, X, CreditCard } from 'lucide-react'
 import { Tarjeta } from '@/types'
 
 export default function TarjetasPage() {
-  const { tarjetas, addTarjeta, updateTarjeta, deleteTarjeta } = useData()
+  const { tarjetas, addTarjeta, updateTarjeta, deleteTarjeta, loading } = useData()
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState<Tarjeta | null>(null)
+  const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     nombre: '', tipo: 'visa', banco: '', digitos: '', cierre: ''
   })
@@ -31,7 +32,12 @@ export default function TarjetasPage() {
   }
 
   const handleSave = async () => {
-    if (!form.nombre) return
+    if (!form.nombre) {
+      alert('El nombre es requerido')
+      return
+    }
+
+    setSaving(true)
 
     const data = {
       nombre: form.nombre,
@@ -41,21 +47,47 @@ export default function TarjetasPage() {
       cierre: form.cierre ? parseInt(form.cierre) : null
     }
 
-    if (editing) {
-      await updateTarjeta(editing.id, data)
-    } else {
-      await addTarjeta(data)
-    }
+    try {
+      if (editing) {
+        const { error } = await updateTarjeta(editing.id, data)
+        if (error) {
+          console.error('Error updating:', error)
+          alert('Error al actualizar: ' + error.message)
+        }
+      } else {
+        const { error } = await addTarjeta(data)
+        if (error) {
+          console.error('Error adding:', error)
+          alert('Error al agregar: ' + error.message)
+        }
+      }
 
-    setShowModal(false)
-    setEditing(null)
-    resetForm()
+      setShowModal(false)
+      setEditing(null)
+      resetForm()
+    } catch (err) {
+      console.error('Exception:', err)
+      alert('Error inesperado')
+    }
+    
+    setSaving(false)
   }
 
   const handleDelete = async (id: string) => {
     if (confirm('¿Eliminar esta tarjeta?')) {
-      await deleteTarjeta(id)
+      const { error } = await deleteTarjeta(id)
+      if (error) {
+        alert('Error al eliminar: ' + error.message)
+      }
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full" />
+      </div>
+    )
   }
 
   return (
@@ -63,19 +95,22 @@ export default function TarjetasPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Tarjetas</h1>
-          <p className="text-slate-500">Administrá tus tarjetas</p>
+          <p className="text-slate-500">Administrá tus tarjetas ({tarjetas.length})</p>
         </div>
         <button onClick={() => { resetForm(); setEditing(null); setShowModal(true) }} className="btn btn-primary">
-          <Plus className="w-4 h-4" /> Nueva
+          <Plus className="w-4 h-4" /> Nueva Tarjeta
         </button>
       </div>
 
       {/* Cards Grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {tarjetas.length === 0 ? (
-          <div className="col-span-full text-center py-16 text-slate-400">
-            <div className="text-5xl mb-4">💳</div>
-            <p>No tenés tarjetas</p>
+          <div className="col-span-full card p-12 text-center">
+            <CreditCard className="w-16 h-16 mx-auto text-slate-300 mb-4" />
+            <p className="text-slate-500 mb-4">No tenés tarjetas configuradas</p>
+            <button onClick={() => { resetForm(); setEditing(null); setShowModal(true) }} className="btn btn-primary">
+              <Plus className="w-4 h-4" /> Agregar primera tarjeta
+            </button>
           </div>
         ) : tarjetas.map(t => (
           <div key={t.id} className={`${getCardTypeClass(t.tipo)} rounded-2xl p-5 text-white min-h-[160px] relative`}>
@@ -116,7 +151,7 @@ export default function TarjetasPage() {
             </div>
             <div className="p-4 space-y-4">
               <div>
-                <label className="label">Nombre</label>
+                <label className="label">Nombre *</label>
                 <input
                   type="text"
                   className="input"
@@ -175,8 +210,12 @@ export default function TarjetasPage() {
                   />
                 </div>
               </div>
-              <button onClick={handleSave} className="btn btn-primary w-full justify-center">
-                Guardar
+              <button 
+                onClick={handleSave} 
+                disabled={saving}
+                className="btn btn-primary w-full justify-center"
+              >
+                {saving ? 'Guardando...' : 'Guardar'}
               </button>
             </div>
           </div>

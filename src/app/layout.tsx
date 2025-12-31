@@ -8,7 +8,6 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Finanzas Familia',
   description: 'Control financiero familiar',
-  manifest: '/manifest.json',
   themeColor: '#6366f1',
 }
 
@@ -19,6 +18,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+      </head>
       <body className={inter.className}>
         <AuthProvider>
           {children}
