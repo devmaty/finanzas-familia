@@ -106,10 +106,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
 
+    // Force page reload when returning to tab to avoid stale Supabase client issues
+    let wasHidden = false
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        wasHidden = true
+        console.log('👁️ [useAuth] Tab hidden - marking for reload on return')
+      } else if (document.visibilityState === 'visible' && wasHidden) {
+        console.log('👁️ [useAuth] Tab visible again - reloading page to refresh Supabase client')
+        window.location.reload()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     return () => {
       console.log('🔐 [useAuth] Unmounting')
       mounted = false
       subscription.unsubscribe()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [])
 
