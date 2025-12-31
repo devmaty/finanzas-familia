@@ -30,17 +30,29 @@ export default function AhorrosPage() {
   const patrimonioEnUsd = (ahorroPesos / dolar) + ahorroUsd
 
   const handleAddSavings = async (tipo: 'pesos' | 'usd', isAdd: boolean) => {
+    console.log('🟢 [AhorrosPage] handleAddSavings CALLED - tipo:', tipo, 'isAdd:', isAdd)
+    console.log('🟢 [AhorrosPage] handleAddSavings - addMovimiento function:', typeof addMovimiento, addMovimiento)
+
     const input = tipo === 'pesos' ? inputPesos : inputUsd
     const amount = parseFloat(input)
-    if (!amount || amount <= 0) return
+    console.log('🟢 [AhorrosPage] handleAddSavings - input:', input, 'amount:', amount)
+
+    if (!amount || amount <= 0) {
+      console.log('🟢 [AhorrosPage] handleAddSavings - Invalid amount, returning')
+      return
+    }
 
     const finalAmount = isAdd ? amount : -amount
     const field = tipo === 'pesos' ? 'ahorro_pesos' : 'ahorro_usd'
     const currentValue = tipo === 'pesos' ? ahorroPesos : ahorroUsd
     const newValue = Math.max(0, currentValue + finalAmount)
 
+    console.log('🟢 [AhorrosPage] handleAddSavings - Updating profile:', field, '=', newValue)
     await updateProfile({ [field]: newValue })
-    await addMovimiento(tipo, finalAmount)
+
+    console.log('🟢 [AhorrosPage] handleAddSavings - Calling addMovimiento with tipo:', tipo, 'amount:', finalAmount)
+    const result = await addMovimiento(tipo, finalAmount)
+    console.log('🟢 [AhorrosPage] handleAddSavings - addMovimiento result:', result)
 
     if (tipo === 'pesos') setInputPesos('')
     else setInputUsd('')
@@ -151,10 +163,16 @@ export default function AhorrosPage() {
             onChange={e => setInputPesos(e.target.value)}
           />
           <div className="flex gap-2">
-            <button onClick={() => handleAddSavings('pesos', true)} className="btn btn-success flex-1 justify-center">
+            <button onClick={() => {
+              console.log('🟢 [AhorrosPage] "Agregar Pesos" button CLICKED')
+              handleAddSavings('pesos', true)
+            }} className="btn btn-success flex-1 justify-center">
               <Plus className="w-4 h-4" /> Agregar
             </button>
-            <button onClick={() => handleAddSavings('pesos', false)} className="btn btn-danger flex-1 justify-center">
+            <button onClick={() => {
+              console.log('🟢 [AhorrosPage] "Quitar Pesos" button CLICKED')
+              handleAddSavings('pesos', false)
+            }} className="btn btn-danger flex-1 justify-center">
               <Minus className="w-4 h-4" /> Quitar
             </button>
           </div>
@@ -192,10 +210,16 @@ export default function AhorrosPage() {
             onChange={e => setInputUsd(e.target.value)}
           />
           <div className="flex gap-2">
-            <button onClick={() => handleAddSavings('usd', true)} className="btn btn-success flex-1 justify-center">
+            <button onClick={() => {
+              console.log('🟢 [AhorrosPage] "Agregar USD" button CLICKED')
+              handleAddSavings('usd', true)
+            }} className="btn btn-success flex-1 justify-center">
               <Plus className="w-4 h-4" /> Agregar
             </button>
-            <button onClick={() => handleAddSavings('usd', false)} className="btn btn-danger flex-1 justify-center">
+            <button onClick={() => {
+              console.log('🟢 [AhorrosPage] "Quitar USD" button CLICKED')
+              handleAddSavings('usd', false)
+            }} className="btn btn-danger flex-1 justify-center">
               <Minus className="w-4 h-4" /> Quitar
             </button>
           </div>
