@@ -199,7 +199,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     console.log('📊 [useData] useEffect triggered - authLoading:', authLoading, 'user:', user?.id || 'NULL')
-    console.log('📊 [useData] useEffect - fetchAll function identity:', fetchAll.toString().substring(0, 50))
 
     // If we have a user, fetch data regardless of authLoading
     // authLoading might be true while fetching profile, but we can still fetch data
@@ -219,7 +218,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     // If no user and auth finished loading, clear data
     console.log('📊 [useData] No user and auth finished - Calling fetchAll to clear data')
     fetchAll()
-  }, [authLoading, user?.id, fetchAll])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user?.id])
 
   useEffect(() => {
     if (user) {
