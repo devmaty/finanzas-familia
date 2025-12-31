@@ -106,42 +106,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
 
-    // Handle page visibility changes to prevent stale sessions
-    const handleVisibilityChange = async () => {
-      console.log('👁️ [useAuth] Visibility changed! State:', document.visibilityState)
-
-      if (document.visibilityState === 'visible') {
-        console.log('🔐 [useAuth] Page became visible - refreshing session')
-        try {
-          const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession()
-          if (error) {
-            console.error('🔐 [useAuth] Session refresh failed:', error)
-            // If refresh fails, try to get the current session
-            const { data: { session: currentSession } } = await supabase.auth.getSession()
-            if (currentSession && mounted) {
-              setSession(currentSession)
-              setUser(currentSession.user)
-            }
-          } else if (refreshedSession && mounted) {
-            console.log('🔐 [useAuth] Session refreshed successfully')
-            setSession(refreshedSession)
-            setUser(refreshedSession.user)
-          }
-        } catch (err) {
-          console.error('🔐 [useAuth] Error refreshing session on visibility change:', err)
-        }
-      }
-    }
-
-    console.log('👁️ [useAuth] Adding visibility change listener')
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-
     return () => {
       console.log('🔐 [useAuth] Unmounting')
-      console.log('👁️ [useAuth] Removing visibility change listener')
       mounted = false
       subscription.unsubscribe()
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [])
 
