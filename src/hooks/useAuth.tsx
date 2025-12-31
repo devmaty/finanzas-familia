@@ -101,7 +101,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     setLoading(true)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) setLoading(false)
+    // If error, clear loading state immediately
+    // If success, onAuthStateChange will handle setting loading to false
+    if (error) {
+      setLoading(false)
+    }
     return { error }
   }
 

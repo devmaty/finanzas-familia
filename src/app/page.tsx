@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Mail, Lock, Loader2 } from 'lucide-react'
@@ -13,9 +13,16 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  
-  const { signIn, signUp } = useAuth()
+
+  const { signIn, signUp, user, loading: authLoading } = useAuth()
   const router = useRouter()
+
+  // Redirect to dashboard when user is authenticated
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push('/dashboard')
+    }
+  }, [user, authLoading, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -26,12 +33,12 @@ export default function LoginPage() {
     if (isLogin) {
       const { error } = await signIn(email, password)
       if (error) {
-        setError(error.message === 'Invalid login credentials' 
-          ? 'Email o contraseña incorrectos' 
+        setError(error.message === 'Invalid login credentials'
+          ? 'Email o contraseña incorrectos'
           : error.message)
-      } else {
-        router.push('/dashboard')
+        setLoading(false)
       }
+      // Don't navigate here - let useEffect handle it when user is ready
     } else {
       const { error } = await signUp(email, password)
       if (error) {
@@ -39,8 +46,8 @@ export default function LoginPage() {
       } else {
         setSuccess('¡Cuenta creada! Revisá tu email para confirmar.')
       }
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (
