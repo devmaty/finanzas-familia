@@ -43,29 +43,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true
+    console.log('🔐 [useAuth] Initial mount')
 
     const getSession = async () => {
+      console.log('🔐 [useAuth] Getting session...')
       try {
         const { data: { session }, error } = await supabase.auth.getSession()
-        
+
         if (error) throw error
-        
+
+        console.log('🔐 [useAuth] Session result:', session ? 'FOUND' : 'NOT FOUND')
+
         if (mounted) {
           setSession(session)
           setUser(session?.user ?? null)
-          
+
           if (session?.user) {
+            console.log('🔐 [useAuth] Fetching profile for user:', session.user.id)
             const profileData = await fetchProfile(session.user.id)
             if (mounted) setProfile(profileData)
           }
+          console.log('🔐 [useAuth] Setting loading to FALSE')
           setLoading(false)
         }
       } catch (error) {
-        console.error('Session error:', error)
+        console.error('🔐 [useAuth] Session error:', error)
         if (mounted) {
           setSession(null)
           setUser(null)
           setProfile(null)
+          console.log('🔐 [useAuth] Error - Setting loading to FALSE')
           setLoading(false)
         }
       }
@@ -74,18 +81,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     getSession()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔐 [useAuth] Auth state change:', event, session ? 'HAS SESSION' : 'NO SESSION')
       if (mounted) {
         setSession(session)
         setUser(session?.user ?? null)
-        
+
         if (event === 'SIGNED_OUT') {
+          console.log('🔐 [useAuth] SIGNED_OUT - Setting loading to FALSE')
           setProfile(null)
           setLoading(false)
         } else if (session?.user) {
+          console.log('🔐 [useAuth] User logged in - Fetching profile')
           const profileData = await fetchProfile(session.user.id)
           if (mounted) setProfile(profileData)
+          console.log('🔐 [useAuth] Profile fetched - Setting loading to FALSE')
           setLoading(false)
         } else {
+          console.log('🔐 [useAuth] No user - Setting loading to FALSE')
           setProfile(null)
           setLoading(false)
         }
@@ -93,18 +105,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     return () => {
+      console.log('🔐 [useAuth] Unmounting')
       mounted = false
       subscription.unsubscribe()
     }
   }, [])
 
   const signIn = async (email: string, password: string) => {
+    console.log('🔐 [useAuth] signIn called - Setting loading to TRUE')
     setLoading(true)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     // If error, clear loading state immediately
     // If success, onAuthStateChange will handle setting loading to false
     if (error) {
+      console.log('🔐 [useAuth] signIn ERROR - Setting loading to FALSE')
       setLoading(false)
+    } else {
+      console.log('🔐 [useAuth] signIn SUCCESS - waiting for onAuthStateChange')
     }
     return { error }
   }
