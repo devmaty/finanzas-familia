@@ -108,6 +108,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Handle page visibility changes to prevent stale sessions
     const handleVisibilityChange = async () => {
+      console.log('👁️ [useAuth] Visibility changed! State:', document.visibilityState)
+
       if (document.visibilityState === 'visible') {
         console.log('🔐 [useAuth] Page became visible - refreshing session')
         try {
@@ -131,10 +133,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    console.log('👁️ [useAuth] Adding visibility change listener')
     document.addEventListener('visibilitychange', handleVisibilityChange)
 
     return () => {
       console.log('🔐 [useAuth] Unmounting')
+      console.log('👁️ [useAuth] Removing visibility change listener')
       mounted = false
       subscription.unsubscribe()
       document.removeEventListener('visibilitychange', handleVisibilityChange)
