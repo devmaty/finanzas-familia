@@ -206,6 +206,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           mes_facturacion: data.mes_facturacion,
           es_fijo: data.es_fijo,
           tag_ids: data.tag_ids || [],
+          pagado: data.pagado || false,
           created_at: data.created_at instanceof Timestamp
             ? data.created_at.toDate().toISOString()
             : data.created_at

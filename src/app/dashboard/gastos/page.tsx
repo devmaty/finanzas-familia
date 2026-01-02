@@ -39,7 +39,7 @@ export default function GastosPage() {
   const [gastoForm, setGastoForm] = useState({
     descripcion: '', tarjeta_id: '', categoria_id: '', monto: '',
     moneda: 'ARS', cuotas: '1', fecha: new Date().toISOString().split('T')[0],
-    es_fijo: false, tag_ids: [] as string[]
+    es_fijo: false, tag_ids: [] as string[], pagado: false
   })
   const [impForm, setImpForm] = useState({
     descripcion: '', tarjeta_id: '', monto: '', mes: monthKey
@@ -106,7 +106,8 @@ export default function GastosPage() {
       fecha: gastoForm.fecha,
       mes_facturacion: mesFacturacion,
       es_fijo: gastoForm.es_fijo,
-      tag_ids: gastoForm.tag_ids
+      tag_ids: gastoForm.tag_ids,
+      pagado: gastoForm.pagado
     }
 
     console.log('🔵 [GastosPage] handleSaveGasto - Data to save:', data)
@@ -151,7 +152,7 @@ export default function GastosPage() {
     setGastoForm({
       descripcion: '', tarjeta_id: tarjetas[0]?.id || '', categoria_id: '', monto: '',
       moneda: 'ARS', cuotas: '1', fecha: new Date().toISOString().split('T')[0],
-      es_fijo: false, tag_ids: []
+      es_fijo: false, tag_ids: [], pagado: false
     })
   }
 
@@ -170,9 +171,14 @@ export default function GastosPage() {
       cuotas: String(g.cuotas),
       fecha: g.fecha,
       es_fijo: g.es_fijo,
-      tag_ids: g.tag_ids || []
+      tag_ids: g.tag_ids || [],
+      pagado: g.pagado || false
     })
     setShowGastoModal(true)
+  }
+
+  const togglePagado = async (g: Gasto) => {
+    await updateGasto(g.id, { pagado: !g.pagado })
   }
 
   const toggleFijo = async (g: Gasto) => {
@@ -265,6 +271,7 @@ export default function GastosPage() {
                 <th className="text-left p-4 text-xs font-bold text-slate-500 uppercase">Monto</th>
                 <th className="text-left p-4 text-xs font-bold text-slate-500 uppercase">Cuotas</th>
                 <th className="text-left p-4 text-xs font-bold text-slate-500 uppercase">Fijo</th>
+                <th className="text-left p-4 text-xs font-bold text-slate-500 uppercase">Pagado</th>
                 <th className="text-left p-4 text-xs font-bold text-slate-500 uppercase"></th>
               </tr>
             </thead>
@@ -285,14 +292,14 @@ export default function GastosPage() {
                   )
                 }
                 return (
-                  <tr key={g.id} className="border-b border-slate-100 hover:bg-slate-50">
+                  <tr key={g.id} className={`border-b border-slate-100 hover:bg-slate-50 transition ${g.pagado ? 'opacity-50' : ''}`}>
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center text-lg">
                           {categoriaMap[g.categoria_id || '']?.icono || '💰'}
                         </div>
                         <div>
-                          <div className="font-semibold">{g.descripcion}</div>
+                          <div className={`font-semibold ${g.pagado ? 'line-through' : ''}`}>{g.descripcion}</div>
                           <div className="text-xs text-slate-500">
                             {categoriaMap[g.categoria_id || '']?.nombre || 'Sin categoría'}
                             {g.es_fijo && ' 📌'}
@@ -343,6 +350,22 @@ export default function GastosPage() {
                         <div className={`absolute w-4 h-4 bg-white rounded-full top-1 transition-transform ${
                           g.es_fijo ? 'translate-x-5' : 'translate-x-1'
                         }`} />
+                      </button>
+                    </td>
+                    <td className="p-4">
+                      <button
+                        onClick={() => togglePagado(g)}
+                        className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+                          g.pagado
+                            ? 'bg-emerald-500 border-emerald-500'
+                            : 'bg-white border-slate-300 hover:border-emerald-400'
+                        }`}
+                      >
+                        {g.pagado && (
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
                       </button>
                     </td>
                     <td className="p-4">
