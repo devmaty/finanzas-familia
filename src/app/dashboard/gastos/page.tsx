@@ -75,7 +75,7 @@ export default function GastosPage() {
     }
 
     const fecha = new Date(gastoForm.fecha)
-    const mesFacturacion = `${fecha.getFullYear()}-${String(fecha.getMonth() + 2).padStart(2, '0')}`
+    const mesFacturacion = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`
 
     const data = {
       descripcion: gastoForm.descripcion,
