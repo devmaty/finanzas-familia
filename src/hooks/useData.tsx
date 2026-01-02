@@ -502,12 +502,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const getGastosMes = useCallback((mes: string) => {
-    return []
-  }, [])
+    console.log('📊 [Firebase getGastosMes] called - mes:', mes, 'total gastos:', gastos.length)
+    return gastos.filter(g => g.mes_facturacion === mes)
+  }, [gastos])
 
   const getImpuestosMes = useCallback((mes: string) => {
-    return []
-  }, [])
+    console.log('📊 [Firebase getImpuestosMes] called - mes:', mes, 'total impuestos:', impuestos.length)
+    return impuestos.filter(i => i.mes === mes)
+  }, [impuestos])
 
   const getGastosNoProximoMes = useCallback((mesActual: string) => {
     return { gastos: [], cantidad: 0, totalARS: 0, totalUSD: 0 }
