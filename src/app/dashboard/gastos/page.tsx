@@ -37,6 +37,10 @@ export default function GastosPage() {
   let gastosMes = getGastosMes(monthKey)
   const impuestosMes = getImpuestosMes(monthKey)
 
+  // Create lookup maps for categorias and tarjetas
+  const categoriaMap = Object.fromEntries(categorias.map(c => [c.id, c]))
+  const tarjetaMap = Object.fromEntries(tarjetas.map(t => [t.id, t]))
+
   // Apply filters
   if (filters.search) {
     gastosMes = gastosMes.filter(g => 
@@ -261,21 +265,21 @@ export default function GastosPage() {
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center text-lg">
-                          {g.categoria?.icono || '💰'}
+                          {categoriaMap[g.categoria_id || '']?.icono || '💰'}
                         </div>
                         <div>
                           <div className="font-semibold">{g.descripcion}</div>
                           <div className="text-xs text-slate-500">
-                            {g.categoria?.nombre || 'Sin categoría'}
+                            {categoriaMap[g.categoria_id || '']?.nombre || 'Sin categoría'}
                             {g.es_fijo && ' 📌'}
                           </div>
                         </div>
                       </div>
                     </td>
                     <td className="p-4">
-                      {g.tarjeta && (
-                        <span className={`tag ${getTagClass(g.tarjeta.tipo)}`}>
-                          {g.tarjeta.nombre}
+                      {tarjetaMap[g.tarjeta_id || ''] && (
+                        <span className={`tag ${getTagClass(tarjetaMap[g.tarjeta_id || ''].tipo)}`}>
+                          {tarjetaMap[g.tarjeta_id || ''].nombre}
                         </span>
                       )}
                     </td>
@@ -353,9 +357,9 @@ export default function GastosPage() {
                     <tr key={i.id} className="border-b border-slate-100 hover:bg-slate-50">
                       <td className="p-4 font-semibold">{i.descripcion}</td>
                       <td className="p-4">
-                        {i.tarjeta && (
-                          <span className={`tag ${getTagClass(i.tarjeta.tipo)}`}>
-                            {i.tarjeta.nombre}
+                        {tarjetaMap[i.tarjeta_id || ''] && (
+                          <span className={`tag ${getTagClass(tarjetaMap[i.tarjeta_id || ''].tipo)}`}>
+                            {tarjetaMap[i.tarjeta_id || ''].nombre}
                           </span>
                         )}
                       </td>
