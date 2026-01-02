@@ -13,13 +13,17 @@ ChartJS.register(ArcElement, Tooltip, Legend)
 export default function DashboardPage() {
   const { profile } = useAuth()
   const {
-    tarjetas, gastos, loading, currentMonth, monthKey,
+    tarjetas, categorias, gastos, loading, currentMonth, monthKey,
     getGastosMes, getImpuestosMes
   } = useData()
   const [dolar, setDolar] = useState(1050)
   const [showEndingModal, setShowEndingModal] = useState(false)
 
   console.log('📄 [ResumenPage] Render - loading:', loading)
+
+  // Create lookup maps for categorias and tarjetas
+  const categoriaMap = Object.fromEntries(categorias.map(c => [c.id, c]))
+  const tarjetaMap = Object.fromEntries(tarjetas.map(t => [t.id, t]))
 
   useEffect(() => {
     fetchDolar().then(setDolar)
@@ -135,7 +139,7 @@ export default function DashboardPage() {
   // Chart data por categoría
   const catTotals: Record<string, number> = {}
   gastosMes.filter(g => g.moneda === 'ARS').forEach(g => {
-    const catName = g.categoria?.nombre || 'Otros'
+    const catName = categoriaMap[g.categoria_id || '']?.nombre || 'Otros'
     const monto = g.cuotas > 1 ? g.monto / g.cuotas : g.monto
     catTotals[catName] = (catTotals[catName] || 0) + monto
   })
@@ -379,7 +383,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-sm truncate">{g.descripcion}</div>
-                    <div className="text-xs text-slate-500">{g.categoria?.nombre || 'Sin categoría'}</div>
+                    <div className="text-xs text-slate-500">{categoriaMap[g.categoria_id || '']?.nombre || 'Sin categoría'}</div>
                   </div>
                   <div className="font-bold">{formatMoney(monto)}</div>
                 </div>
@@ -461,7 +465,7 @@ export default function DashboardPage() {
                       <div>
                         <div className="font-semibold">{g.descripcion}</div>
                         <div className="text-xs text-slate-500">
-                          {g.tarjeta?.nombre || 'Sin tarjeta'} • {g.categoria?.nombre || 'Sin categoría'}
+                          {tarjetaMap[g.tarjeta_id || '']?.nombre || 'Sin tarjeta'} • {categoriaMap[g.categoria_id || '']?.nombre || 'Sin categoría'}
                           {g.cuotas > 1 && ` • Última cuota`}
                         </div>
                       </div>
