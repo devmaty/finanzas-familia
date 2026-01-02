@@ -24,7 +24,7 @@ export default function GastosPage() {
   const [showImpModal, setShowImpModal] = useState(false)
   const [editingGasto, setEditingGasto] = useState<Gasto | null>(null)
   const [editingImp, setEditingImp] = useState<any>(null)
-  const [filters, setFilters] = useState({ search: '', tarjeta: '', moneda: '', sort: 'monto-desc' })
+  const [filters, setFilters] = useState({ search: '', tarjeta: '', moneda: '', tag: '', sort: 'monto-desc' })
 
   // Apply filter from URL query params
   useEffect(() => {
@@ -39,7 +39,7 @@ export default function GastosPage() {
   const [gastoForm, setGastoForm] = useState({
     descripcion: '', tarjeta_id: '', categoria_id: '', monto: '',
     moneda: 'ARS', cuotas: '1', fecha: new Date().toISOString().split('T')[0],
-    es_fijo: false
+    es_fijo: false, tag_ids: [] as string[]
   })
   const [impForm, setImpForm] = useState({
     descripcion: '', tarjeta_id: '', monto: '', mes: monthKey
@@ -63,6 +63,9 @@ export default function GastosPage() {
   }
   if (filters.moneda) {
     gastosMes = gastosMes.filter(g => g.moneda === filters.moneda)
+  }
+  if (filters.tag) {
+    gastosMes = gastosMes.filter(g => g.tag_ids?.includes(filters.tag))
   }
 
   // Sort
@@ -102,7 +105,8 @@ export default function GastosPage() {
       cuota_actual: 1,
       fecha: gastoForm.fecha,
       mes_facturacion: mesFacturacion,
-      es_fijo: gastoForm.es_fijo
+      es_fijo: gastoForm.es_fijo,
+      tag_ids: gastoForm.tag_ids
     }
 
     console.log('🔵 [GastosPage] handleSaveGasto - Data to save:', data)
@@ -147,7 +151,7 @@ export default function GastosPage() {
     setGastoForm({
       descripcion: '', tarjeta_id: tarjetas[0]?.id || '', categoria_id: '', monto: '',
       moneda: 'ARS', cuotas: '1', fecha: new Date().toISOString().split('T')[0],
-      es_fijo: false
+      es_fijo: false, tag_ids: []
     })
   }
 
@@ -165,7 +169,8 @@ export default function GastosPage() {
       moneda: g.moneda,
       cuotas: String(g.cuotas),
       fecha: g.fecha,
-      es_fijo: g.es_fijo
+      es_fijo: g.es_fijo,
+      tag_ids: g.tag_ids || []
     })
     setShowGastoModal(true)
   }
@@ -505,6 +510,40 @@ export default function GastosPage() {
                 />
                 <span className="font-semibold">Gasto fijo mensual</span>
               </label>
+
+              {/* Tags multiselect */}
+              <div>
+                <label className="label">Tags</label>
+                <div className="flex flex-wrap gap-2 p-3 bg-slate-50 rounded-xl border-2 border-slate-200 min-h-[3rem]">
+                  {tags.map(t => {
+                    const isSelected = gastoForm.tag_ids.includes(t.id)
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setGastoForm(f => ({ ...f, tag_ids: f.tag_ids.filter(id => id !== t.id) }))
+                          } else {
+                            setGastoForm(f => ({ ...f, tag_ids: [...f.tag_ids, t.id] }))
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${
+                          isSelected
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-white text-orange-700 border border-orange-200 hover:bg-orange-50'
+                        }`}
+                      >
+                        {t.nombre}
+                      </button>
+                    )
+                  })}
+                  {tags.length === 0 && (
+                    <span className="text-sm text-slate-400">Sin tags disponibles. Creá algunos en Configuración.</span>
+                  )}
+                </div>
+              </div>
+
               <button onClick={() => {
                 console.log('🔵 [GastosPage] "Guardar Gasto" button CLICKED')
                 handleSaveGasto()

@@ -28,7 +28,11 @@ body {
   .btn-danger {
     @apply bg-red-500 text-white hover:bg-red-600;
   }
-  
+
+  .btn-warning {
+    @apply bg-amber-500 text-white hover:bg-amber-600;
+  }
+
   .btn-secondary {
     @apply bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200;
   }

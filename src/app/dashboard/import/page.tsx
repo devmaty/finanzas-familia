@@ -18,6 +18,7 @@ export default function ImportPage() {
   const [supabaseUrl, setSupabaseUrl] = useState('https://yzhmctutglxnamzgwyrp.supabase.co')
   const [supabaseKey, setSupabaseKey] = useState('')
   const [importing, setImporting] = useState(false)
+  const [testing, setTesting] = useState(false)
   const [progress, setProgress] = useState<ImportProgress[]>([])
   const [log, setLog] = useState<string[]>([])
 
@@ -38,6 +39,8 @@ export default function ImportPage() {
 
   const fetchFromSupabase = async (table: string) => {
     addLog(`Fetching ${table} from Supabase...`)
+
+    // Try without RLS filter first (using service_role key should bypass RLS)
     const response = await fetch(
       `${supabaseUrl}/rest/v1/${table}?select=*`,
       {
@@ -49,11 +52,20 @@ export default function ImportPage() {
     )
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch ${table}: ${response.statusText}`)
+      const errorText = await response.text()
+      addLog(`❌ HTTP Error ${response.status}: ${errorText}`)
+      throw new Error(`Failed to fetch ${table}: ${response.status} ${response.statusText}`)
     }
 
     const data = await response.json()
     addLog(`✅ Found ${data.length} records in ${table}`)
+
+    if (data.length > 0 && table === 'gastos') {
+      // Log a sample to help debug user_id issues
+      const sample = data[0]
+      addLog(`📋 Sample gasto: user_id=${sample.user_id}, descripcion=${sample.descripcion}`)
+    }
+
     return data
   }
 
@@ -83,6 +95,62 @@ export default function ImportPage() {
 
     addLog(`✅ Imported ${imported}/${data.length} records to ${collectionName}`)
     return imported
+  }
+
+  const testConnection = async () => {
+    if (!supabaseKey) {
+      alert('Por favor ingresá la Supabase Key')
+      return
+    }
+
+    setTesting(true)
+    setLog([])
+    addLog('🔍 Probando conexión a Supabase...')
+
+    try {
+      // Test connection with gastos table
+      addLog(`Consultando tabla 'gastos'...`)
+      const response = await fetch(
+        `${supabaseUrl}/rest/v1/gastos?select=count`,
+        {
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Prefer': 'count=exact'
+          }
+        }
+      )
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        addLog(`❌ Error de conexión: ${response.status} ${response.statusText}`)
+        addLog(`Detalles: ${errorText}`)
+        alert(`Error: ${response.status} - ${response.statusText}\n\nVerificá que la clave sea correcta (debe ser Service Role Key, no Anon Key)`)
+        setTesting(false)
+        return
+      }
+
+      const contentRange = response.headers.get('content-range')
+      const count = contentRange ? parseInt(contentRange.split('/')[1]) : 0
+
+      addLog(`✅ Conexión exitosa!`)
+      addLog(`📊 Se encontraron ${count} gastos en Supabase`)
+
+      if (count === 0) {
+        addLog(`⚠️ ADVERTENCIA: La tabla gastos está vacía o RLS está bloqueando el acceso`)
+        addLog(`💡 Asegurate de usar la "Service Role Key" (no la Anon Key)`)
+        addLog(`💡 La Service Role Key comienza con "eyJ..." y es más larga`)
+        alert('Conexión exitosa, pero no se encontraron gastos.\n\nVerificá:\n1. Que estés usando la Service Role Key (no Anon Key)\n2. Que haya datos en Supabase')
+      } else {
+        alert(`¡Conexión exitosa! Se encontraron ${count} gastos.\n\nYa podés iniciar la importación.`)
+      }
+    } catch (error: any) {
+      console.error('Test error:', error)
+      addLog(`❌ Error: ${error.message}`)
+      alert(`Error de conexión: ${error.message}`)
+    } finally {
+      setTesting(false)
+    }
   }
 
   const startImport = async () => {
@@ -164,7 +232,7 @@ export default function ImportPage() {
             />
           </div>
           <div>
-            <label className="label">Supabase Anon Key (o Service Role Key)</label>
+            <label className="label">Supabase Service Role Key (Secret)</label>
             <input
               type="password"
               className="input"
@@ -173,7 +241,7 @@ export default function ImportPage() {
               placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
             />
             <p className="text-xs text-slate-500 mt-1">
-              Encontrá esta clave en: Supabase Dashboard → Settings → API
+              <strong>⚠️ Usá la Service Role Key (no la Anon Key)</strong> - Encontrala en: Supabase Dashboard → Settings → API → service_role (secret)
             </p>
           </div>
         </div>
@@ -210,23 +278,43 @@ export default function ImportPage() {
           </ul>
         </div>
 
-        <button
-          onClick={startImport}
-          disabled={importing || !user || !supabaseKey}
-          className="btn btn-primary w-full justify-center"
-        >
-          {importing ? (
-            <>
-              <Loader className="w-5 h-5 animate-spin" />
-              Importando...
-            </>
-          ) : (
-            <>
-              <Download className="w-5 h-5" />
-              Iniciar Importación
-            </>
-          )}
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={testConnection}
+            disabled={testing || importing || !supabaseKey}
+            className="btn btn-secondary flex-1 justify-center"
+          >
+            {testing ? (
+              <>
+                <Loader className="w-5 h-5 animate-spin" />
+                Probando...
+              </>
+            ) : (
+              <>
+                <CheckCircle className="w-5 h-5" />
+                Probar Conexión
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={startImport}
+            disabled={importing || testing || !user || !supabaseKey}
+            className="btn btn-primary flex-1 justify-center"
+          >
+            {importing ? (
+              <>
+                <Loader className="w-5 h-5 animate-spin" />
+                Importando...
+              </>
+            ) : (
+              <>
+                <Download className="w-5 h-5" />
+                Iniciar Importación
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Progress */}
@@ -271,11 +359,14 @@ export default function ImportPage() {
       <div className="card p-6 bg-amber-50 border border-amber-200">
         <h3 className="font-bold mb-2 text-amber-900">⚠️ Importante</h3>
         <ul className="text-sm text-amber-800 space-y-1">
-          <li>• Esta página es temporal - podés borrarla después de importar</li>
+          <li>• <strong>IMPORTANTE:</strong> Usá la <strong>Service Role Key</strong> (no la Anon Key)</li>
+          <li>• La Service Role Key la encontrás en: Supabase Dashboard → Settings → API → service_role key (secret)</li>
+          <li>• La Service Role Key es necesaria para evitar restricciones de RLS (Row Level Security)</li>
+          <li>• Probá la conexión antes de importar usando el botón "Probar Conexión"</li>
           <li>• Los datos se importarán asociados a tu usuario actual de Firebase</li>
           <li>• Refrescá la página después de importar para ver los datos</li>
           <li>• Si algo falla, podés volver a ejecutar la importación</li>
-          <li>• Usá la clave "anon key" de Supabase (la pública)</li>
+          <li>• Esta página es temporal - podés borrarla después de importar</li>
         </ul>
       </div>
     </div>
