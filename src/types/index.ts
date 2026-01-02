@@ -49,6 +49,7 @@ export interface Gasto {
   fecha: string
   mes_facturacion: string
   es_fijo: boolean
+  tag_ids: string[]
   created_at: string
   // Relaciones
   tarjeta?: Tarjeta

@@ -4,17 +4,31 @@ import { useState, useEffect } from 'react'
 import { useData } from '@/hooks/useData'
 import { useAuth } from '@/hooks/useAuth'
 import { formatMoney, getMonthName } from '@/lib/utils'
-import { Save, Plus, X, RefreshCw } from 'lucide-react'
+import { Save, Plus, X, RefreshCw, Edit2 } from 'lucide-react'
+import { AlertModal } from '@/components/Modal'
 
 export default function ConfigPage() {
   const { profile, updateProfile } = useAuth()
-  const { tags, addTag, deleteTag, gastos, addGasto, currentMonth } = useData()
+  const {
+    tags, addTag, deleteTag,
+    categorias, addCategoria, updateCategoria, deleteCategoria,
+    gastos, addGasto, currentMonth
+  } = useData()
 
   const [budgetEnabled, setBudgetEnabled] = useState(false)
   const [budgetArs, setBudgetArs] = useState('')
   const [budgetUsd, setBudgetUsd] = useState('')
   const [newTag, setNewTag] = useState('')
   const [saving, setSaving] = useState(false)
+
+  // Modal states
+  const [showAlert, setShowAlert] = useState(false)
+  const [alertData, setAlertData] = useState({ title: '', message: '', variant: 'success' as 'success' | 'error' | 'warning' | 'info' })
+
+  // Categoría modal states
+  const [showCategoriaModal, setShowCategoriaModal] = useState(false)
+  const [editingCategoria, setEditingCategoria] = useState<any>(null)
+  const [categoriaForm, setCategoriaForm] = useState({ nombre: '', icono: '', color: '#6366f1' })
 
   // Inicializar valores del perfil
   useEffect(() => {
@@ -74,17 +88,73 @@ export default function ConfigPage() {
           cuota_actual: 1,
           fecha: nextMonth.toISOString().split('T')[0],
           mes_facturacion: nextMonthKey,
-          es_fijo: true
+          es_fijo: true,
+          tag_ids: g.tag_ids || []
         })
         copied++
       }
     }
 
-    alert(copied > 0 
-      ? `Se copiaron ${copied} gastos fijos a ${getMonthName(nextMonth)}`
-      : 'Todos los gastos fijos ya existen en el próximo mes'
-    )
+    setAlertData({
+      title: copied > 0 ? '¡Gastos copiados!' : 'Sin cambios',
+      message: copied > 0
+        ? `Se copiaron ${copied} gastos fijos a ${getMonthName(nextMonth)}`
+        : 'Todos los gastos fijos ya existen en el próximo mes',
+      variant: copied > 0 ? 'success' : 'info'
+    })
+    setShowAlert(true)
   }
+
+  const handleSaveCategoria = async () => {
+    if (!categoriaForm.nombre.trim() || !categoriaForm.icono.trim()) {
+      setAlertData({
+        title: 'Campos incompletos',
+        message: 'Por favor completá el nombre y seleccioná un icono',
+        variant: 'warning'
+      })
+      setShowAlert(true)
+      return
+    }
+
+    if (editingCategoria) {
+      await updateCategoria(editingCategoria.id, categoriaForm)
+      setAlertData({
+        title: '¡Categoría actualizada!',
+        message: `La categoría "${categoriaForm.nombre}" fue actualizada correctamente`,
+        variant: 'success'
+      })
+    } else {
+      await addCategoria(categoriaForm)
+      setAlertData({
+        title: '¡Categoría creada!',
+        message: `La categoría "${categoriaForm.nombre}" fue creada correctamente`,
+        variant: 'success'
+      })
+    }
+
+    setShowAlert(true)
+    setShowCategoriaModal(false)
+    setCategoriaForm({ nombre: '', icono: '', color: '#6366f1' })
+    setEditingCategoria(null)
+  }
+
+  const handleEditCategoria = (cat: any) => {
+    setEditingCategoria(cat)
+    setCategoriaForm({ nombre: cat.nombre, icono: cat.icono, color: cat.color })
+    setShowCategoriaModal(true)
+  }
+
+  const handleDeleteCategoria = async (id: string, nombre: string) => {
+    await deleteCategoria(id)
+    setAlertData({
+      title: 'Categoría eliminada',
+      message: `La categoría "${nombre}" fue eliminada`,
+      variant: 'success'
+    })
+    setShowAlert(true)
+  }
+
+  const commonIcons = ['🍔', '🏠', '🚗', '🎮', '👕', '💊', '📚', '✈️', '🎬', '🏋️', '🐕', '💰', '🔧', '📱', '💡']
 
   return (
     <div className="space-y-6">
@@ -148,11 +218,65 @@ export default function ConfigPage() {
         </button>
       </div>
 
+      {/* Categorías */}
+      <div className="card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="font-bold">📂 Categorías</h3>
+            <p className="text-slate-500 text-sm mt-1">Administrá tus categorías de gastos</p>
+          </div>
+          <button
+            onClick={() => {
+              setEditingCategoria(null)
+              setCategoriaForm({ nombre: '', icono: '', color: '#6366f1' })
+              setShowCategoriaModal(true)
+            }}
+            className="btn btn-primary"
+          >
+            <Plus className="w-4 h-4" /> Nueva Categoría
+          </button>
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-3">
+          {categorias.map(c => (
+            <div
+              key={c.id}
+              className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition"
+            >
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                style={{ backgroundColor: c.color + '20' }}
+              >
+                {c.icono}
+              </div>
+              <div className="flex-1">
+                <div className="font-semibold">{c.nombre}</div>
+                <div className="text-xs text-slate-500">Color: {c.color}</div>
+              </div>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => handleEditCategoria(c)}
+                  className="p-2 hover:bg-slate-200 rounded-lg transition"
+                >
+                  <Edit2 className="w-4 h-4 text-slate-600" />
+                </button>
+                <button
+                  onClick={() => handleDeleteCategoria(c.id, c.nombre)}
+                  className="p-2 hover:bg-red-100 rounded-lg transition"
+                >
+                  <X className="w-4 h-4 text-red-600" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Tags */}
       <div className="card p-5">
         <h3 className="font-bold mb-4">🏷️ Tags Personalizados</h3>
         <p className="text-slate-500 text-sm mb-4">Creá tags para organizar tus gastos</p>
-        
+
         <div className="flex flex-wrap gap-2 mb-4">
           {tags.map(t => (
             <div key={t.id} className="flex items-center gap-1 bg-orange-100 text-orange-700 px-3 py-1.5 rounded-full">
@@ -166,7 +290,7 @@ export default function ConfigPage() {
             <span className="text-slate-400">Sin tags</span>
           )}
         </div>
-        
+
         <div className="flex gap-2">
           <input
             type="text"
@@ -204,6 +328,113 @@ export default function ConfigPage() {
           <p><strong>Versión:</strong> 2.0.0</p>
         </div>
       </div>
+
+      {/* Modal de Categoría */}
+      {showCategoriaModal && (
+        <div className="modal-overlay" onClick={() => setShowCategoriaModal(false)}>
+          <div className="modal max-w-lg" onClick={e => e.stopPropagation()}>
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="font-bold text-lg">
+                {editingCategoria ? 'Editar Categoría' : 'Nueva Categoría'}
+              </h3>
+              <button onClick={() => setShowCategoriaModal(false)} className="p-1 hover:bg-slate-100 rounded">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="label">Nombre</label>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="ej: Comida, Transporte..."
+                  value={categoriaForm.nombre}
+                  onChange={e => setCategoriaForm(f => ({ ...f, nombre: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <label className="label">Icono</label>
+                <div className="grid grid-cols-8 gap-2 mb-2">
+                  {commonIcons.map(icon => (
+                    <button
+                      key={icon}
+                      onClick={() => setCategoriaForm(f => ({ ...f, icono: icon }))}
+                      className={`p-3 text-2xl rounded-lg border-2 transition ${
+                        categoriaForm.icono === icon
+                          ? 'border-indigo-500 bg-indigo-50'
+                          : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  className="input text-2xl text-center"
+                  placeholder="O escribí un emoji"
+                  value={categoriaForm.icono}
+                  onChange={e => setCategoriaForm(f => ({ ...f, icono: e.target.value }))}
+                  maxLength={2}
+                />
+              </div>
+
+              <div>
+                <label className="label">Color</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    className="w-16 h-16 rounded-lg border-2 border-slate-200 cursor-pointer"
+                    value={categoriaForm.color}
+                    onChange={e => setCategoriaForm(f => ({ ...f, color: e.target.value }))}
+                  />
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      className="input"
+                      placeholder="#6366f1"
+                      value={categoriaForm.color}
+                      onChange={e => setCategoriaForm(f => ({ ...f, color: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div className="bg-slate-50 rounded-xl p-4">
+                <div className="text-xs text-slate-500 mb-2">Vista previa:</div>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                    style={{ backgroundColor: categoriaForm.color + '20' }}
+                  >
+                    {categoriaForm.icono || '?'}
+                  </div>
+                  <div className="font-semibold">{categoriaForm.nombre || 'Nombre de categoría'}</div>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 border-t border-slate-200 flex gap-3 justify-end">
+              <button onClick={() => setShowCategoriaModal(false)} className="btn btn-secondary">
+                Cancelar
+              </button>
+              <button onClick={handleSaveCategoria} className="btn btn-primary">
+                {editingCategoria ? 'Actualizar' : 'Crear'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={showAlert}
+        onClose={() => setShowAlert(false)}
+        title={alertData.title}
+        message={alertData.message}
+        variant={alertData.variant}
+      />
     </div>
   )
 }

@@ -37,6 +37,9 @@ type DataContextType = {
   deleteMeta: (id: string) => Promise<{ error: any }>
   addTag: (nombre: string) => Promise<{ error: any }>
   deleteTag: (id: string) => Promise<{ error: any }>
+  addCategoria: (data: any) => Promise<{ error: any }>
+  updateCategoria: (id: string, data: any) => Promise<{ error: any }>
+  deleteCategoria: (id: string) => Promise<{ error: any }>
   addGasto: (data: any) => Promise<{ error: any, data?: Gasto }>
   updateGasto: (id: string, data: any) => Promise<{ error: any }>
   deleteGasto: (id: string) => Promise<{ error: any }>
@@ -186,6 +189,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           fecha: data.fecha,
           mes_facturacion: data.mes_facturacion,
           es_fijo: data.es_fijo,
+          tag_ids: data.tag_ids || [],
           created_at: data.created_at instanceof Timestamp
             ? data.created_at.toDate().toISOString()
             : data.created_at
@@ -508,6 +512,78 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, [user, fetchAll])
 
+  const addCategoria = useCallback(async (data: any) => {
+    if (!user) {
+      console.error('📂 [Firebase addCategoria] No user!')
+      return { error: new Error('No user') }
+    }
+
+    console.log('📂 [Firebase addCategoria] called', data)
+
+    try {
+      const insertData = {
+        ...data,
+        user_id: user.uid,
+        created_at: serverTimestamp()
+      }
+
+      const categoriasRef = collection(db, 'categorias')
+      await addDoc(categoriasRef, insertData)
+
+      console.log('📂 [Firebase addCategoria] SUCCESS - Calling fetchAll')
+      await fetchAll()
+
+      return { error: null }
+    } catch (error) {
+      console.error('📂 [Firebase addCategoria] ERROR:', error)
+      return { error }
+    }
+  }, [user, fetchAll])
+
+  const updateCategoria = useCallback(async (id: string, data: any) => {
+    if (!user) {
+      console.error('📂 [Firebase updateCategoria] No user!')
+      return { error: new Error('No user') }
+    }
+
+    console.log('📂 [Firebase updateCategoria] called', id, data)
+
+    try {
+      const categoriaRef = doc(db, 'categorias', id)
+      await updateDoc(categoriaRef, data)
+
+      console.log('📂 [Firebase updateCategoria] SUCCESS - Calling fetchAll')
+      await fetchAll()
+
+      return { error: null }
+    } catch (error) {
+      console.error('📂 [Firebase updateCategoria] ERROR:', error)
+      return { error }
+    }
+  }, [user, fetchAll])
+
+  const deleteCategoria = useCallback(async (id: string) => {
+    if (!user) {
+      console.error('📂 [Firebase deleteCategoria] No user!')
+      return { error: new Error('No user') }
+    }
+
+    console.log('📂 [Firebase deleteCategoria] called', id)
+
+    try {
+      const categoriaRef = doc(db, 'categorias', id)
+      await deleteDoc(categoriaRef)
+
+      console.log('📂 [Firebase deleteCategoria] SUCCESS - Calling fetchAll')
+      await fetchAll()
+
+      return { error: null }
+    } catch (error) {
+      console.error('📂 [Firebase deleteCategoria] ERROR:', error)
+      return { error }
+    }
+  }, [user, fetchAll])
+
   const addGasto = useCallback(async (data: any) => {
     if (!user) {
       console.error('💰 [Firebase addGasto] No user!')
@@ -784,6 +860,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     deleteMeta,
     addTag,
     deleteTag,
+    addCategoria,
+    updateCategoria,
+    deleteCategoria,
     addGasto,
     updateGasto,
     deleteGasto,
