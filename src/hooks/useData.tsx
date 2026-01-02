@@ -7,6 +7,9 @@ import {
   where,
   getDocs,
   addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
   serverTimestamp,
   orderBy,
   Timestamp
@@ -107,10 +110,65 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       console.log('📊 [Firebase useData] Movimientos result:', movimientosData.length, 'rows')
 
+      // Fetch metas
+      const metasRef = collection(db, 'metas')
+      const metasQuery = query(
+        metasRef,
+        where('user_id', '==', user.uid),
+        orderBy('created_at', 'desc')
+      )
+      const metasSnap = await getDocs(metasQuery)
+      const metasData = metasSnap.docs.map(doc => {
+        const data = doc.data()
+        return {
+          id: doc.id,
+          user_id: data.user_id,
+          nombre: data.nombre,
+          icono: data.icono,
+          objetivo: data.objetivo,
+          progreso: data.progreso,
+          moneda: data.moneda,
+          completada: data.completada || false,
+          created_at: data.created_at instanceof Timestamp
+            ? data.created_at.toDate().toISOString()
+            : data.created_at
+        }
+      }) as Meta[]
+
+      console.log('📊 [Firebase useData] Metas result:', metasData.length, 'rows')
+
+      // Fetch tarjetas
+      const tarjetasRef = collection(db, 'tarjetas')
+      const tarjetasQuery = query(
+        tarjetasRef,
+        where('user_id', '==', user.uid),
+        orderBy('created_at', 'desc')
+      )
+      const tarjetasSnap = await getDocs(tarjetasQuery)
+      const tarjetasData = tarjetasSnap.docs.map(doc => {
+        const data = doc.data()
+        return {
+          id: doc.id,
+          user_id: data.user_id,
+          nombre: data.nombre,
+          tipo: data.tipo,
+          banco: data.banco || null,
+          digitos: data.digitos || null,
+          cierre: data.cierre || null,
+          created_at: data.created_at instanceof Timestamp
+            ? data.created_at.toDate().toISOString()
+            : data.created_at
+        }
+      }) as Tarjeta[]
+
+      console.log('📊 [Firebase useData] Tarjetas result:', tarjetasData.length, 'rows')
+
       const endTime = Date.now()
       console.log('📊 [Firebase useData] Data fetched successfully in', endTime - startTime, 'ms')
 
       setMovimientos(movimientosData)
+      setMetas(metasData)
+      setTarjetas(tarjetasData)
       setLoading(false)
     } catch (error) {
       console.error('📊 [Firebase useData] Error fetching data:', error)
@@ -170,19 +228,77 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const addMeta = useCallback(async (data: any) => {
-    console.log('⚠️ [Firebase] addMeta not implemented yet')
-    return { error: new Error('Not implemented') }
-  }, [])
+    if (!user) {
+      console.error('🎯 [Firebase addMeta] No user!')
+      return { error: new Error('No user') }
+    }
+
+    console.log('🎯 [Firebase addMeta] called', data)
+
+    try {
+      const insertData = {
+        ...data,
+        user_id: user.uid,
+        completada: false,
+        created_at: serverTimestamp()
+      }
+
+      const metasRef = collection(db, 'metas')
+      await addDoc(metasRef, insertData)
+
+      console.log('🎯 [Firebase addMeta] SUCCESS - Calling fetchAll')
+      await fetchAll()
+
+      return { error: null }
+    } catch (error) {
+      console.error('🎯 [Firebase addMeta] ERROR:', error)
+      return { error }
+    }
+  }, [user, fetchAll])
 
   const updateMeta = useCallback(async (id: string, data: any) => {
-    console.log('⚠️ [Firebase] updateMeta not implemented yet')
-    return { error: new Error('Not implemented') }
-  }, [])
+    if (!user) {
+      console.error('🎯 [Firebase updateMeta] No user!')
+      return { error: new Error('No user') }
+    }
+
+    console.log('🎯 [Firebase updateMeta] called', id, data)
+
+    try {
+      const metaRef = doc(db, 'metas', id)
+      await updateDoc(metaRef, data)
+
+      console.log('🎯 [Firebase updateMeta] SUCCESS - Calling fetchAll')
+      await fetchAll()
+
+      return { error: null }
+    } catch (error) {
+      console.error('🎯 [Firebase updateMeta] ERROR:', error)
+      return { error }
+    }
+  }, [user, fetchAll])
 
   const deleteMeta = useCallback(async (id: string) => {
-    console.log('⚠️ [Firebase] deleteMeta not implemented yet')
-    return { error: new Error('Not implemented') }
-  }, [])
+    if (!user) {
+      console.error('🎯 [Firebase deleteMeta] No user!')
+      return { error: new Error('No user') }
+    }
+
+    console.log('🎯 [Firebase deleteMeta] called', id)
+
+    try {
+      const metaRef = doc(db, 'metas', id)
+      await deleteDoc(metaRef)
+
+      console.log('🎯 [Firebase deleteMeta] SUCCESS - Calling fetchAll')
+      await fetchAll()
+
+      return { error: null }
+    } catch (error) {
+      console.error('🎯 [Firebase deleteMeta] ERROR:', error)
+      return { error }
+    }
+  }, [user, fetchAll])
 
   const addTag = useCallback(async (nombre: string) => {
     console.log('⚠️ [Firebase] addTag not implemented yet')
@@ -210,19 +326,76 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const addTarjeta = useCallback(async (data: any) => {
-    console.log('⚠️ [Firebase] addTarjeta not implemented yet')
-    return { error: new Error('Not implemented') }
-  }, [])
+    if (!user) {
+      console.error('💳 [Firebase addTarjeta] No user!')
+      return { error: new Error('No user') }
+    }
+
+    console.log('💳 [Firebase addTarjeta] called', data)
+
+    try {
+      const insertData = {
+        ...data,
+        user_id: user.uid,
+        created_at: serverTimestamp()
+      }
+
+      const tarjetasRef = collection(db, 'tarjetas')
+      await addDoc(tarjetasRef, insertData)
+
+      console.log('💳 [Firebase addTarjeta] SUCCESS - Calling fetchAll')
+      await fetchAll()
+
+      return { error: null }
+    } catch (error) {
+      console.error('💳 [Firebase addTarjeta] ERROR:', error)
+      return { error }
+    }
+  }, [user, fetchAll])
 
   const updateTarjeta = useCallback(async (id: string, data: any) => {
-    console.log('⚠️ [Firebase] updateTarjeta not implemented yet')
-    return { error: new Error('Not implemented') }
-  }, [])
+    if (!user) {
+      console.error('💳 [Firebase updateTarjeta] No user!')
+      return { error: new Error('No user') }
+    }
+
+    console.log('💳 [Firebase updateTarjeta] called', id, data)
+
+    try {
+      const tarjetaRef = doc(db, 'tarjetas', id)
+      await updateDoc(tarjetaRef, data)
+
+      console.log('💳 [Firebase updateTarjeta] SUCCESS - Calling fetchAll')
+      await fetchAll()
+
+      return { error: null }
+    } catch (error) {
+      console.error('💳 [Firebase updateTarjeta] ERROR:', error)
+      return { error }
+    }
+  }, [user, fetchAll])
 
   const deleteTarjeta = useCallback(async (id: string) => {
-    console.log('⚠️ [Firebase] deleteTarjeta not implemented yet')
-    return { error: new Error('Not implemented') }
-  }, [])
+    if (!user) {
+      console.error('💳 [Firebase deleteTarjeta] No user!')
+      return { error: new Error('No user') }
+    }
+
+    console.log('💳 [Firebase deleteTarjeta] called', id)
+
+    try {
+      const tarjetaRef = doc(db, 'tarjetas', id)
+      await deleteDoc(tarjetaRef)
+
+      console.log('💳 [Firebase deleteTarjeta] SUCCESS - Calling fetchAll')
+      await fetchAll()
+
+      return { error: null }
+    } catch (error) {
+      console.error('💳 [Firebase deleteTarjeta] ERROR:', error)
+      return { error }
+    }
+  }, [user, fetchAll])
 
   const addImpuesto = useCallback(async (data: any) => {
     console.log('⚠️ [Firebase] addImpuesto not implemented yet')
