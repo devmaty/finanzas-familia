@@ -9,7 +9,14 @@ export function createClient() {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        storage: typeof window !== 'undefined' ? window.localStorage : undefined
+        // Disable multi-tab sync - this might be causing the corruption
+        storageKey: 'supabase-auth-token',
+        flowType: 'pkce'
+      },
+      global: {
+        headers: {
+          'x-client-info': 'finanzas-familia'
+        }
       }
     }
   )
