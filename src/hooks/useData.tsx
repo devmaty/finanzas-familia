@@ -243,6 +243,53 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       console.log('📊 [Firebase useData] Categorias result:', categoriasData.length, 'rows')
 
+      // Si no hay categorías, crear las estándar automáticamente
+      if (categoriasData.length === 0) {
+        console.log('📂 [Firebase useData] No categories found - Creating default categories')
+
+        const defaultCategorias = [
+          { nombre: 'Comida', icono: '🍔', color: '#f97316' },
+          { nombre: 'Hogar', icono: '🏠', color: '#3b82f6' },
+          { nombre: 'Transporte', icono: '🚗', color: '#10b981' },
+          { nombre: 'Entretenimiento', icono: '🎮', color: '#8b5cf6' },
+          { nombre: 'Ropa', icono: '👕', color: '#ec4899' },
+          { nombre: 'Salud', icono: '💊', color: '#ef4444' },
+          { nombre: 'Educación', icono: '📚', color: '#06b6d4' },
+          { nombre: 'Otros', icono: '💰', color: '#6b7280' }
+        ]
+
+        const categoriasRef = collection(db, 'categorias')
+        for (const categoria of defaultCategorias) {
+          await addDoc(categoriasRef, {
+            ...categoria,
+            user_id: user.uid,
+            created_at: serverTimestamp()
+          })
+        }
+
+        console.log('✅ [Firebase useData] Default categories created - Fetching again')
+
+        // Volver a obtener las categorías
+        const categoriasSnapNew = await getDocs(categoriasQuery)
+        const categoriasDataNew = categoriasSnapNew.docs.map(doc => {
+          const data = doc.data()
+          return {
+            id: doc.id,
+            user_id: data.user_id,
+            nombre: data.nombre,
+            icono: data.icono,
+            color: data.color,
+            created_at: data.created_at instanceof Timestamp
+              ? data.created_at.toDate().toISOString()
+              : data.created_at
+          }
+        }) as Categoria[]
+
+        categoriasData.length = 0
+        categoriasData.push(...categoriasDataNew)
+        console.log('📊 [Firebase useData] Categorias after creation:', categoriasData.length, 'rows')
+      }
+
       // Fetch tags
       const tagsRef = collection(db, 'tags')
       const tagsQuery = query(
