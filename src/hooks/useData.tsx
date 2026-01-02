@@ -163,12 +163,44 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       console.log('📊 [Firebase useData] Tarjetas result:', tarjetasData.length, 'rows')
 
+      // Fetch gastos
+      const gastosRef = collection(db, 'gastos')
+      const gastosQuery = query(
+        gastosRef,
+        where('user_id', '==', user.uid),
+        orderBy('created_at', 'desc')
+      )
+      const gastosSnap = await getDocs(gastosQuery)
+      const gastosData = gastosSnap.docs.map(doc => {
+        const data = doc.data()
+        return {
+          id: doc.id,
+          user_id: data.user_id,
+          tarjeta_id: data.tarjeta_id || null,
+          categoria_id: data.categoria_id || null,
+          descripcion: data.descripcion,
+          monto: data.monto,
+          moneda: data.moneda,
+          cuotas: data.cuotas,
+          cuota_actual: data.cuota_actual,
+          fecha: data.fecha,
+          mes_facturacion: data.mes_facturacion,
+          es_fijo: data.es_fijo,
+          created_at: data.created_at instanceof Timestamp
+            ? data.created_at.toDate().toISOString()
+            : data.created_at
+        }
+      }) as Gasto[]
+
+      console.log('📊 [Firebase useData] Gastos result:', gastosData.length, 'rows')
+
       const endTime = Date.now()
       console.log('📊 [Firebase useData] Data fetched successfully in', endTime - startTime, 'ms')
 
       setMovimientos(movimientosData)
       setMetas(metasData)
       setTarjetas(tarjetasData)
+      setGastos(gastosData)
       setLoading(false)
     } catch (error) {
       console.error('📊 [Firebase useData] Error fetching data:', error)
@@ -311,19 +343,76 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const addGasto = useCallback(async (data: any) => {
-    console.log('⚠️ [Firebase] addGasto not implemented yet')
-    return { error: new Error('Not implemented') }
-  }, [])
+    if (!user) {
+      console.error('💰 [Firebase addGasto] No user!')
+      return { error: new Error('No user') }
+    }
+
+    console.log('💰 [Firebase addGasto] called', data)
+
+    try {
+      const insertData = {
+        ...data,
+        user_id: user.uid,
+        created_at: serverTimestamp()
+      }
+
+      const gastosRef = collection(db, 'gastos')
+      const docRef = await addDoc(gastosRef, insertData)
+
+      console.log('💰 [Firebase addGasto] SUCCESS - Calling fetchAll')
+      await fetchAll()
+
+      return { error: null, data: { id: docRef.id, ...data } }
+    } catch (error) {
+      console.error('💰 [Firebase addGasto] ERROR:', error)
+      return { error }
+    }
+  }, [user, fetchAll])
 
   const updateGasto = useCallback(async (id: string, data: any) => {
-    console.log('⚠️ [Firebase] updateGasto not implemented yet')
-    return { error: new Error('Not implemented') }
-  }, [])
+    if (!user) {
+      console.error('💰 [Firebase updateGasto] No user!')
+      return { error: new Error('No user') }
+    }
+
+    console.log('💰 [Firebase updateGasto] called', id, data)
+
+    try {
+      const gastoRef = doc(db, 'gastos', id)
+      await updateDoc(gastoRef, data)
+
+      console.log('💰 [Firebase updateGasto] SUCCESS - Calling fetchAll')
+      await fetchAll()
+
+      return { error: null }
+    } catch (error) {
+      console.error('💰 [Firebase updateGasto] ERROR:', error)
+      return { error }
+    }
+  }, [user, fetchAll])
 
   const deleteGasto = useCallback(async (id: string) => {
-    console.log('⚠️ [Firebase] deleteGasto not implemented yet')
-    return { error: new Error('Not implemented') }
-  }, [])
+    if (!user) {
+      console.error('💰 [Firebase deleteGasto] No user!')
+      return { error: new Error('No user') }
+    }
+
+    console.log('💰 [Firebase deleteGasto] called', id)
+
+    try {
+      const gastoRef = doc(db, 'gastos', id)
+      await deleteDoc(gastoRef)
+
+      console.log('💰 [Firebase deleteGasto] SUCCESS - Calling fetchAll')
+      await fetchAll()
+
+      return { error: null }
+    } catch (error) {
+      console.error('💰 [Firebase deleteGasto] ERROR:', error)
+      return { error }
+    }
+  }, [user, fetchAll])
 
   const addTarjeta = useCallback(async (data: any) => {
     if (!user) {
