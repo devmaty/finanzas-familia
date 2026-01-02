@@ -8,7 +8,7 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged
 } from 'firebase/auth'
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
 import { Profile } from '@/types'
 
@@ -98,6 +98,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const createDefaultCategorias = async (userId: string) => {
+    console.log('📂 [Firebase useAuth] Creating default categorias for user:', userId)
+
+    const defaultCategorias = [
+      { nombre: 'Comida', icono: '🍔', color: '#f97316' },
+      { nombre: 'Hogar', icono: '🏠', color: '#3b82f6' },
+      { nombre: 'Transporte', icono: '🚗', color: '#10b981' },
+      { nombre: 'Entretenimiento', icono: '🎮', color: '#8b5cf6' },
+      { nombre: 'Ropa', icono: '👕', color: '#ec4899' },
+      { nombre: 'Salud', icono: '💊', color: '#ef4444' },
+      { nombre: 'Educación', icono: '📚', color: '#06b6d4' },
+      { nombre: 'Otros', icono: '💰', color: '#6b7280' }
+    ]
+
+    const categoriasRef = collection(db, 'categorias')
+
+    for (const categoria of defaultCategorias) {
+      await addDoc(categoriasRef, {
+        ...categoria,
+        user_id: userId,
+        created_at: serverTimestamp()
+      })
+    }
+
+    console.log('✅ [Firebase useAuth] Default categorias created')
+  }
+
   const signUp = async (email: string, password: string) => {
     console.log('🔐 [Firebase useAuth] signUp called')
     try {
@@ -114,6 +141,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         created_at: new Date().toISOString()
       }
       await setDoc(doc(db, 'profiles', userCredential.user.uid), defaultProfile)
+
+      // Create default categorias
+      await createDefaultCategorias(userCredential.user.uid)
+
       console.log('🔐 [Firebase useAuth] signUp SUCCESS')
       return { error: null }
     } catch (error: any) {
