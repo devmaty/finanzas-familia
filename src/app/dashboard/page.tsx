@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useData } from '@/hooks/useData'
 import { useAuth } from '@/hooks/useAuth'
 import { formatMoney, getMonthName, fetchDolar, getTagClass, getMonthKey } from '@/lib/utils'
@@ -11,6 +12,7 @@ import { Doughnut } from 'react-chartjs-2'
 ChartJS.register(ArcElement, Tooltip, Legend)
 
 export default function DashboardPage() {
+  const router = useRouter()
   const { profile } = useAuth()
   const {
     tarjetas, categorias, gastos, loading, currentMonth, monthKey,
@@ -423,7 +425,11 @@ export default function DashboardPage() {
                 })
                 const cImp = iT.reduce((s, i) => s + i.monto, 0)
                 return (
-                  <tr key={t.id} className="border-b border-slate-100 hover:bg-slate-50">
+                  <tr
+                    key={t.id}
+                    className="border-b border-slate-100 hover:bg-indigo-50 cursor-pointer transition-colors"
+                    onClick={() => router.push(`/dashboard/gastos?tarjeta=${t.id}`)}
+                  >
                     <td className="p-4">
                       <span className={`tag ${getTagClass(t.tipo)}`}>{t.nombre}</span>
                     </td>

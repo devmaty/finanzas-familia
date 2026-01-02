@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useData } from '@/hooks/useData'
 import { formatMoney, getMonthName, getTagClass } from '@/lib/utils'
 import { Plus, Search, Edit2, Trash2, Pin, X } from 'lucide-react'
@@ -9,6 +10,7 @@ import { Gasto } from '@/types'
 export default function GastosPage() {
   console.log('🔵🔵🔵 [GastosPage] COMPONENT RENDER')
 
+  const searchParams = useSearchParams()
   const {
     tarjetas, categorias, tags,
     currentMonth, monthKey, getGastosMes, getImpuestosMes,
@@ -23,6 +25,15 @@ export default function GastosPage() {
   const [editingGasto, setEditingGasto] = useState<Gasto | null>(null)
   const [editingImp, setEditingImp] = useState<any>(null)
   const [filters, setFilters] = useState({ search: '', tarjeta: '', moneda: '', sort: 'monto-desc' })
+
+  // Apply filter from URL query params
+  useEffect(() => {
+    const tarjetaParam = searchParams.get('tarjeta')
+    if (tarjetaParam) {
+      console.log('🔵 [GastosPage] Applying tarjeta filter from URL:', tarjetaParam)
+      setFilters(f => ({ ...f, tarjeta: tarjetaParam }))
+    }
+  }, [searchParams])
 
   // Form states
   const [gastoForm, setGastoForm] = useState({
@@ -277,9 +288,13 @@ export default function GastosPage() {
                       </div>
                     </td>
                     <td className="p-4">
-                      {tarjetaMap[g.tarjeta_id || ''] && (
+                      {tarjetaMap[g.tarjeta_id || ''] ? (
                         <span className={`tag ${getTagClass(tarjetaMap[g.tarjeta_id || ''].tipo)}`}>
                           {tarjetaMap[g.tarjeta_id || ''].nombre}
+                        </span>
+                      ) : (
+                        <span className="tag bg-emerald-100 text-emerald-700">
+                          💵 Efectivo
                         </span>
                       )}
                     </td>
@@ -357,9 +372,13 @@ export default function GastosPage() {
                     <tr key={i.id} className="border-b border-slate-100 hover:bg-slate-50">
                       <td className="p-4 font-semibold">{i.descripcion}</td>
                       <td className="p-4">
-                        {tarjetaMap[i.tarjeta_id || ''] && (
+                        {tarjetaMap[i.tarjeta_id || ''] ? (
                           <span className={`tag ${getTagClass(tarjetaMap[i.tarjeta_id || ''].tipo)}`}>
                             {tarjetaMap[i.tarjeta_id || ''].nombre}
+                          </span>
+                        ) : (
+                          <span className="tag bg-emerald-100 text-emerald-700">
+                            💵 Efectivo
                           </span>
                         )}
                       </td>
@@ -417,7 +436,7 @@ export default function GastosPage() {
                     value={gastoForm.tarjeta_id}
                     onChange={e => setGastoForm(f => ({ ...f, tarjeta_id: e.target.value }))}
                   >
-                    <option value="">Seleccionar</option>
+                    <option value="">💵 Efectivo</option>
                     {tarjetas.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
                   </select>
                 </div>
@@ -525,7 +544,7 @@ export default function GastosPage() {
                     value={impForm.tarjeta_id}
                     onChange={e => setImpForm(f => ({ ...f, tarjeta_id: e.target.value }))}
                   >
-                    <option value="">Seleccionar</option>
+                    <option value="">💵 Efectivo</option>
                     {tarjetas.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
                   </select>
                 </div>
