@@ -478,12 +478,15 @@ export default function GastosPage() {
             </div>
             <div className="p-4 space-y-4">
               <div>
-                <label className="label">Descripción</label>
+                <label className="label">
+                  Descripción <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
-                  className="input"
+                  className={`input ${!gastoForm.descripcion && gastoError ? 'border-red-500 border-2' : ''}`}
                   value={gastoForm.descripcion}
                   onChange={e => setGastoForm(f => ({ ...f, descripcion: e.target.value }))}
+                  placeholder="Ej: Compra en supermercado"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -512,13 +515,16 @@ export default function GastosPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="label">Monto</label>
+                  <label className="label">
+                    Monto <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="number"
                     step="0.01"
-                    className="input"
+                    className={`input ${!gastoForm.monto && gastoError ? 'border-red-500 border-2' : ''}`}
                     value={gastoForm.monto}
                     onChange={e => setGastoForm(f => ({ ...f, monto: e.target.value }))}
+                    placeholder="0.00"
                   />
                 </div>
                 <div>

@@ -334,13 +334,16 @@ export default function DashboardPage() {
           </div>
 
           {/* Diferencia */}
-          <div className={`rounded-xl p-4 ${diferenciaTotal > 0 ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'}`}>
+          <div className={`rounded-xl p-4 ${diferenciaARS > 0 ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'}`}>
             <div className="text-slate-600 font-bold text-sm mb-2">📊 Diferencia</div>
-            <div className={`text-lg font-bold ${diferenciaTotal > 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-              {diferenciaTotal > 0 ? '-' : '+'}{formatMoney(Math.abs(diferenciaTotal))}
+            <div className={`text-lg font-bold ${diferenciaARS > 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+              {diferenciaARS > 0 ? '-' : '+'}{formatMoney(Math.abs(diferenciaARS))}
             </div>
             <div className={`text-xs ${diferenciaUSD >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
               {diferenciaUSD >= 0 ? '-' : '+'}{formatMoney(Math.abs(diferenciaUSD), 'USD')}
+            </div>
+            <div className="text-xs text-slate-500 mt-1">
+              (Total ≈ {diferenciaTotal > 0 ? '-' : '+'}{formatMoney(Math.abs(diferenciaTotal))})
             </div>
           </div>
         </div>
@@ -614,7 +617,7 @@ export default function DashboardPage() {
           }
         }}
         title="📅 Estás viendo un mes anterior"
-        message={`Estás revisando ${getMonthName(currentMonth)}.\n\n¿Querés ir al mes actual?`}
+        message={`Este es el último mes que estuviste revisando: ${getMonthName(currentMonth)}.\n\nRecordá que no es el mes actual. Podés cambiarlo con las flechas si querés ver otro mes.`}
         variant="info"
       />
     </div>

@@ -406,7 +406,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setCurrentMonth(prev => {
       const newDate = new Date(prev)
       newDate.setMonth(newDate.getMonth() + delta)
-      console.log('📅 [Firebase] Changed month from', prev.toISOString().slice(0, 7), 'to', newDate.toISOString().slice(0, 7))
+      const monthKey = newDate.toISOString().slice(0, 7)
+      console.log('📅 [Firebase] Changed month from', prev.toISOString().slice(0, 7), 'to', monthKey)
+
+      // Save to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('lastViewedMonth', monthKey)
+        console.log('📅 [Firebase] Saved to localStorage:', monthKey)
+      }
+
       return newDate
     })
   }, [])
