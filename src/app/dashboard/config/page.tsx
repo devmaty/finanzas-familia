@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useData } from '@/hooks/useData'
 import { useAuth } from '@/hooks/useAuth'
 import { formatMoney, getMonthName } from '@/lib/utils'
-import { Save, Plus, X, RefreshCw, Edit2 } from 'lucide-react'
+import { Save, Plus, X, Edit2 } from 'lucide-react'
 import { AlertModal } from '@/components/Modal'
 
 export default function ConfigPage() {
@@ -64,45 +64,6 @@ export default function ConfigPage() {
     if (!newTag.trim()) return
     await addTag(newTag.trim())
     setNewTag('')
-  }
-
-  const handleCopyRecurring = async () => {
-    const fijos = gastos.filter(g => g.es_fijo)
-    const nextMonth = new Date(currentMonth)
-    nextMonth.setMonth(nextMonth.getMonth() + 1)
-    const nextMonthKey = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}`
-
-    let copied = 0
-    for (const g of fijos) {
-      const exists = gastos.some(
-        x => x.descripcion === g.descripcion && x.mes_facturacion === nextMonthKey && x.es_fijo
-      )
-      if (!exists) {
-        await addGasto({
-          descripcion: g.descripcion,
-          tarjeta_id: g.tarjeta_id,
-          categoria_id: g.categoria_id,
-          monto: g.monto,
-          moneda: g.moneda,
-          cuotas: 1,
-          cuota_actual: 1,
-          fecha: nextMonth.toISOString().split('T')[0],
-          mes_facturacion: nextMonthKey,
-          es_fijo: true,
-          tag_ids: g.tag_ids || []
-        })
-        copied++
-      }
-    }
-
-    setAlertData({
-      title: copied > 0 ? '¡Gastos copiados!' : 'Sin cambios',
-      message: copied > 0
-        ? `Se copiaron ${copied} gastos fijos a ${getMonthName(nextMonth)}`
-        : 'Todos los gastos fijos ya existen en el próximo mes',
-      variant: copied > 0 ? 'success' : 'info'
-    })
-    setShowAlert(true)
   }
 
   const handleSaveCategoria = async () => {
@@ -306,19 +267,6 @@ export default function ConfigPage() {
         </div>
       </div>
 
-      {/* Gastos Recurrentes */}
-      <div className="card p-5">
-        <h3 className="font-bold mb-4">🔄 Gastos Recurrentes</h3>
-        <p className="text-slate-500 text-sm mb-4">
-          Copiá automáticamente todos los gastos marcados como "fijos" al próximo mes
-        </p>
-        
-        <button onClick={handleCopyRecurring} className="btn btn-primary">
-          <RefreshCw className="w-4 h-4" />
-          Copiar Gastos Fijos al Próximo Mes
-        </button>
-      </div>
-
       {/* Info */}
       <div className="card p-5 bg-slate-50">
         <h3 className="font-bold mb-2">ℹ️ Información</h3>
@@ -360,7 +308,7 @@ export default function ConfigPage() {
                     <button
                       key={icon}
                       onClick={() => setCategoriaForm(f => ({ ...f, icono: icon }))}
-                      className={`p-3 text-2xl rounded-lg border-2 transition ${
+                      className={`p-3 text-2xl rounded-lg border-2 transition flex items-center justify-center ${
                         categoriaForm.icono === icon
                           ? 'border-indigo-500 bg-indigo-50'
                           : 'border-slate-200 hover:border-slate-300'

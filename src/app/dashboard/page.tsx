@@ -8,6 +8,8 @@ import { formatMoney, getMonthName, fetchDolar, getTagClass, getMonthKey } from 
 import { Download, TrendingUp, CreditCard, Receipt, Pin, DollarSign, Calendar, X, ChevronRight } from 'lucide-react'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
 import { Doughnut } from 'react-chartjs-2'
+import { AlertModal } from '@/components/Modal'
+import * as XLSX from 'xlsx'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 
@@ -15,11 +17,13 @@ export default function DashboardPage() {
   const router = useRouter()
   const { profile } = useAuth()
   const {
-    tarjetas, categorias, gastos, loading, currentMonth, monthKey,
+    tarjetas, categorias, gastos, loading, currentMonth, monthKey, changeMonth,
     getGastosMes, getImpuestosMes
   } = useData()
   const [dolar, setDolar] = useState(1050)
   const [showEndingModal, setShowEndingModal] = useState(false)
+  const [showMonthAlert, setShowMonthAlert] = useState(false)
+  const [hasShownInitialAlert, setHasShownInitialAlert] = useState(false)
 
   console.log('📄 [ResumenPage] Render - loading:', loading)
 
@@ -30,6 +34,71 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchDolar().then(setDolar)
   }, [])
+
+  // Check if viewing a different month than current (SOLO AL CARGAR)
+  useEffect(() => {
+    if (!loading && !hasShownInitialAlert) {
+      const today = new Date()
+      const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+
+      if (monthKey !== currentMonthKey) {
+        setShowMonthAlert(true)
+      }
+      setHasShownInitialAlert(true)
+    }
+  }, [loading, hasShownInitialAlert, monthKey])
+
+  // Export to Excel function
+  const exportToExcel = () => {
+    // Prepare gastos data
+    const gastosData = gastosMes.map(g => {
+      const monto = g.cuotas > 1 ? g.monto / g.cuotas : g.monto
+      return {
+        'Fecha': g.fecha,
+        'Descripción': g.descripcion,
+        'Categoría': categoriaMap[g.categoria_id || '']?.nombre || 'Sin categoría',
+        'Tarjeta': tarjetaMap[g.tarjeta_id || '']?.nombre || 'Efectivo',
+        'Monto': monto,
+        'Moneda': g.moneda,
+        'Cuotas': g.cuotas > 1 ? `${g.cuota_actual || 1}/${g.cuotas}` : '-',
+        'Fijo': g.es_fijo ? 'Sí' : 'No',
+        'Pagado': g.pagado ? 'Sí' : 'No'
+      }
+    })
+
+    // Prepare impuestos data
+    const impuestosData = impuestosMes.map(i => ({
+      'Descripción': i.descripcion,
+      'Tarjeta': tarjetaMap[i.tarjeta_id || '']?.nombre || 'Efectivo',
+      'Monto': i.monto,
+      'Mes': i.mes
+    }))
+
+    // Create workbook
+    const wb = XLSX.utils.book_new()
+
+    // Add Gastos sheet
+    const wsGastos = XLSX.utils.json_to_sheet(gastosData)
+    XLSX.utils.book_append_sheet(wb, wsGastos, 'Gastos')
+
+    // Add Impuestos sheet
+    const wsImpuestos = XLSX.utils.json_to_sheet(impuestosData)
+    XLSX.utils.book_append_sheet(wb, wsImpuestos, 'Impuestos')
+
+    // Add Summary sheet
+    const summaryData = [
+      { 'Concepto': 'Gastos ARS', 'Monto': totalARS },
+      { 'Concepto': 'Gastos USD', 'Monto': totalUSD },
+      { 'Concepto': 'Impuestos', 'Monto': totalImpuestos },
+      { 'Concepto': 'Total a Pagar (ARS)', 'Monto': totalPagar },
+      { 'Concepto': 'Dólar', 'Monto': dolar }
+    ]
+    const wsSummary = XLSX.utils.json_to_sheet(summaryData)
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumen')
+
+    // Download
+    XLSX.writeFile(wb, `Gastos_${getMonthName(currentMonth).replace(' ', '_')}.xlsx`)
+  }
 
   if (loading) {
     console.log('📄 [ResumenPage] SHOWING LOADING SPINNER - loading is TRUE')
@@ -52,9 +121,9 @@ export default function DashboardPage() {
   const gastosProximoMes = getGastosMes(nextMonthKey)
   const impuestosProximoMes = getImpuestosMes(nextMonthKey)
 
-  // Calcular totales MES ACTUAL
+  // Calcular totales MES ACTUAL (sin contar los pagados)
   let totalARS = 0, totalUSD = 0, totalFijos = 0, totalFijosUSD = 0
-  gastosMes.forEach(g => {
+  gastosMes.filter(g => !g.pagado).forEach(g => {
     const monto = g.cuotas > 1 ? g.monto / g.cuotas : g.monto
     if (g.moneda === 'USD') {
       totalUSD += monto
@@ -69,9 +138,9 @@ export default function DashboardPage() {
   const totalPagar = totalARS + totalImpuestos
   const usdEnPesos = totalUSD * dolar
 
-  // Calcular totales PRÓXIMO MES
+  // Calcular totales PRÓXIMO MES (sin contar los pagados)
   let proximoARS = 0, proximoUSD = 0, proximoFijosARS = 0, proximoFijosUSD = 0
-  gastosProximoMes.forEach(g => {
+  gastosProximoMes.filter(g => !g.pagado).forEach(g => {
     const monto = g.cuotas > 1 ? g.monto / g.cuotas : g.monto
     if (g.moneda === 'USD') {
       proximoUSD += monto
@@ -83,9 +152,9 @@ export default function DashboardPage() {
   })
   const proximoImpuestos = impuestosProximoMes.reduce((s, i) => s + i.monto, 0)
 
-  // GASTOS QUE TERMINAN ESTE MES (no están en próximo mes, excluyendo fijos)
+  // GASTOS QUE TERMINAN ESTE MES (no están en próximo mes, excluyendo fijos y pagados)
   const gastosTerminan = gastosMes.filter(g => {
-    if (g.es_fijo) return false
+    if (g.es_fijo || g.pagado) return false
     return !gastosProximoMes.some(gp => gp.id === g.id)
   })
 
@@ -155,9 +224,9 @@ export default function DashboardPage() {
     }]
   }
 
-  // Top 5 gastos
+  // Top 5 gastos (sin contar pagados)
   const topGastos = [...gastosMes]
-    .filter(g => g.moneda === 'ARS')
+    .filter(g => g.moneda === 'ARS' && !g.pagado)
     .sort((a, b) => {
       const montoA = a.cuotas > 1 ? a.monto / a.cuotas : a.monto
       const montoB = b.cuotas > 1 ? b.monto / b.cuotas : b.monto
@@ -173,7 +242,7 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold">Resumen</h1>
           <p className="text-slate-500">Vista general de {getMonthName(currentMonth)}</p>
         </div>
-        <button className="btn btn-success">
+        <button onClick={exportToExcel} className="btn btn-success">
           <Download className="w-4 h-4" />
           Exportar Excel
         </button>
@@ -414,8 +483,39 @@ export default function DashboardPage() {
               </tr>
             </thead>
             <tbody>
+              {/* Gastos en efectivo */}
+              {(() => {
+                const gEfectivo = gastosMes.filter(g => !g.tarjeta_id && !g.pagado)
+                const iEfectivo = impuestosMes.filter(i => !i.tarjeta_id)
+                let efectivoARS = 0, efectivoUSD = 0
+                gEfectivo.forEach(g => {
+                  const m = g.cuotas > 1 ? g.monto / g.cuotas : g.monto
+                  if (g.moneda === 'USD') efectivoUSD += m
+                  else efectivoARS += m
+                })
+                const efectivoImp = iEfectivo.reduce((s, i) => s + i.monto, 0)
+
+                if (gEfectivo.length > 0 || iEfectivo.length > 0) {
+                  return (
+                    <tr
+                      onClick={() => router.push(`/dashboard/gastos?tarjeta=efectivo&mes=${monthKey}`)}
+                      className="border-b border-slate-100 hover:bg-emerald-50 cursor-pointer transition-colors"
+                    >
+                      <td className="p-4">
+                        <span className="tag bg-emerald-100 text-emerald-700">💵 Efectivo</span>
+                      </td>
+                      <td className="p-4 font-semibold">{formatMoney(efectivoARS)}</td>
+                      <td className="p-4 font-semibold text-emerald-600">{efectivoUSD > 0 ? formatMoney(efectivoUSD, 'USD') : '-'}</td>
+                      <td className="p-4 font-semibold">{formatMoney(efectivoImp)}</td>
+                      <td className="p-4 font-bold">{formatMoney(efectivoARS + efectivoImp)}</td>
+                    </tr>
+                  )
+                }
+              })()}
+
+              {/* Tarjetas */}
               {tarjetas.length > 0 ? tarjetas.map(t => {
-                const gT = gastosMes.filter(g => g.tarjeta_id === t.id)
+                const gT = gastosMes.filter(g => g.tarjeta_id === t.id && !g.pagado)
                 const iT = impuestosMes.filter(i => i.tarjeta_id === t.id)
                 let cARS = 0, cUSD = 0
                 gT.forEach(g => {
@@ -498,6 +598,23 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Month Alert Modal */}
+      <AlertModal
+        isOpen={showMonthAlert}
+        onClose={() => {
+          setShowMonthAlert(false)
+          // Optionally navigate to current month
+          const today = new Date()
+          const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+          if (monthKey !== todayKey) {
+            // User can manually go to current month if they want
+          }
+        }}
+        title="📅 Estás viendo un mes anterior"
+        message={`Estás revisando ${getMonthName(currentMonth)}.\n\n¿Querés ir al mes actual?`}
+        variant="info"
+      />
     </div>
   )
 }

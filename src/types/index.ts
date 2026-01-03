@@ -50,6 +50,7 @@ export interface Gasto {
   mes_facturacion: string
   es_fijo: boolean
   tag_ids: string[]
+  pagado: boolean
   created_at: string
   // Relaciones
   tarjeta?: Tarjeta

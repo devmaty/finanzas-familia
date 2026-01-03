@@ -70,9 +70,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [tags, setTags] = useState<Tag[]>([])
   const [loading, setLoading] = useState(true)
-  const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    // Restore last viewed month from localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('lastViewedMonth')
+      if (saved) {
+        return new Date(saved + '-01')
+      }
+    }
+    return new Date()
+  })
 
   const monthKey = currentMonth.toISOString().slice(0, 7)
+
+  // Save current month to localStorage when it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('lastViewedMonth', monthKey)
+    }
+  }, [monthKey])
 
   const fetchAll = useCallback(async () => {
     console.log('📊 [Firebase useData] fetchAll called')
@@ -190,6 +206,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           mes_facturacion: data.mes_facturacion,
           es_fijo: data.es_fijo,
           tag_ids: data.tag_ids || [],
+          pagado: data.pagado || false,
           created_at: data.created_at instanceof Timestamp
             ? data.created_at.toDate().toISOString()
             : data.created_at
