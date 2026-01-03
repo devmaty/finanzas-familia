@@ -1,21 +1,28 @@
 {
-  "name": "Finanzas Familia",
-  "short_name": "Finanzas",
-  "description": "Control financiero familiar",
+  "name": "FinControl - Controlá tus Finanzas",
+  "short_name": "FinControl",
+  "description": "Plataforma profesional para el control y seguimiento de tus finanzas personales y familiares",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f8fafc",
   "theme_color": "#6366f1",
   "icons": [
     {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
       "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
