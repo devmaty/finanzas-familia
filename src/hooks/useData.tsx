@@ -442,24 +442,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     console.log('💵 [Firebase deleteMovimiento] called', id)
 
     try {
-      // Primero obtener el movimiento para saber cuánto restar del patrimonio
-      const movimientoToDelete = movimientos.find(m => m.id === id)
-      if (!movimientoToDelete) {
-        console.error('💵 [Firebase deleteMovimiento] Movimiento no encontrado')
-        return { error: new Error('Movimiento no encontrado') }
-      }
-
-      // Actualizar el patrimonio restando el monto del movimiento
-      const field = movimientoToDelete.tipo === 'pesos' ? 'ahorro_pesos' : 'ahorro_usd'
-      const currentValue = movimientoToDelete.tipo === 'pesos'
-        ? (profile?.ahorro_pesos || 0)
-        : (profile?.ahorro_usd || 0)
-      const newValue = Math.max(0, currentValue - movimientoToDelete.monto)
-
-      const profileRef = doc(db, 'profiles', user.uid)
-      await updateDoc(profileRef, { [field]: newValue })
-
-      // Luego eliminar el documento
       const movimientoRef = doc(db, 'movimientos_ahorro', id)
       await deleteDoc(movimientoRef)
 
@@ -471,7 +453,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.error('💵 [Firebase deleteMovimiento] ERROR:', error)
       return { error }
     }
-  }, [user, fetchAll, movimientos, profile])
+  }, [user, fetchAll])
 
   const changeMonth = useCallback((delta: number) => {
     console.log('📅 [Firebase] changeMonth called with delta:', delta)

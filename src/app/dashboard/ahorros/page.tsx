@@ -177,6 +177,13 @@ export default function AhorrosPage() {
 
   const handleDeleteMovimiento = async () => {
     if (!movimientoToDelete) return
+
+    // Actualizar el patrimonio restando el monto del movimiento
+    const field = movimientoToDelete.tipo === 'pesos' ? 'ahorro_pesos' : 'ahorro_usd'
+    const currentValue = movimientoToDelete.tipo === 'pesos' ? ahorroPesos : ahorroUsd
+    const newValue = Math.max(0, currentValue - movimientoToDelete.monto)
+
+    await updateProfile({ [field]: newValue })
     await deleteMovimiento(movimientoToDelete.id)
     setMovimientoToDelete(null)
   }
@@ -184,6 +191,16 @@ export default function AhorrosPage() {
   const handleDeleteAll = async () => {
     const movimientosToDelete = movimientos.filter(m => m.tipo === currentTipo)
 
+    // Calcular el total a restar
+    const totalToSubtract = movimientosToDelete.reduce((sum, m) => sum + m.monto, 0)
+    const field = currentTipo === 'pesos' ? 'ahorro_pesos' : 'ahorro_usd'
+    const currentValue = currentTipo === 'pesos' ? ahorroPesos : ahorroUsd
+    const newValue = Math.max(0, currentValue - totalToSubtract)
+
+    // Actualizar el patrimonio
+    await updateProfile({ [field]: newValue })
+
+    // Eliminar todos los movimientos
     for (const m of movimientosToDelete) {
       await deleteMovimiento(m.id)
     }
