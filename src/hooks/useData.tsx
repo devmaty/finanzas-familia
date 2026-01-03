@@ -248,7 +248,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         orderBy('created_at', 'desc')
       )
       const categoriasSnap = await getDocs(categoriasQuery)
-      const categoriasData = categoriasSnap.docs.map(doc => {
+      let categoriasData = categoriasSnap.docs.map(doc => {
         const data = doc.data()
         return {
           id: doc.id,
@@ -292,7 +292,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         // Volver a obtener las categorías
         const categoriasSnapNew = await getDocs(categoriasQuery)
-        const categoriasDataNew = categoriasSnapNew.docs.map(doc => {
+        categoriasData = categoriasSnapNew.docs.map(doc => {
           const data = doc.data()
           return {
             id: doc.id,
@@ -306,8 +306,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
           }
         }) as Categoria[]
 
-        categoriasData.length = 0
-        categoriasData.push(...categoriasDataNew)
         console.log('📊 [Firebase useData] Categorias after creation:', categoriasData.length, 'rows')
       }
 

@@ -26,7 +26,9 @@ export default function AhorrosPage() {
   const [inputUsd, setInputUsd] = useState('')
 
   useEffect(() => {
-    fetchDolar().then(setDolar)
+    fetchDolar()
+      .then(setDolar)
+      .catch(err => console.error('Error al obtener cotización del dólar:', err))
   }, [])
 
   const ahorroPesos = profile?.ahorro_pesos || 0
@@ -311,9 +313,10 @@ export default function AhorrosPage() {
                         placeholder="Agregar"
                         id={`meta-input-${m.id}`}
                       />
-                      <button 
+                      <button
                         onClick={() => {
-                          const input = document.getElementById(`meta-input-${m.id}`) as HTMLInputElement
+                          const input = document.getElementById(`meta-input-${m.id}`) as HTMLInputElement | null
+                          if (!input) return
                           const val = parseFloat(input.value)
                           if (val > 0) {
                             addToMeta(m, val)

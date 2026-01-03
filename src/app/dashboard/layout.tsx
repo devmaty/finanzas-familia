@@ -40,7 +40,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [user, loading, router])
 
   useEffect(() => {
-    fetchDolar().then(setDolar)
+    fetchDolar()
+      .then(setDolar)
+      .catch(err => console.error('Error al obtener cotización del dólar:', err))
   }, [])
 
   const handleSignOut = async () => {

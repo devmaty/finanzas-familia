@@ -146,8 +146,9 @@ export default function ImportPage() {
       }
     } catch (error: any) {
       console.error('Test error:', error)
-      addLog(`❌ Error: ${error.message}`)
-      alert(`Error de conexión: ${error.message}`)
+      const message = error instanceof Error ? error.message : String(error)
+      addLog(`❌ Error: ${message}`)
+      alert(`Error de conexión: ${message}`)
     } finally {
       setTesting(false)
     }
@@ -194,8 +195,9 @@ export default function ImportPage() {
           updateProgress(firebase, 'success', count)
         } catch (error: any) {
           console.error(`Error importing ${firebase}:`, error)
-          updateProgress(firebase, 'error', 0, error.message)
-          addLog(`❌ Error en ${firebase}: ${error.message}`)
+          const message = error instanceof Error ? error.message : String(error)
+          updateProgress(firebase, 'error', 0, message)
+          addLog(`❌ Error en ${firebase}: ${message}`)
         }
       }
 
@@ -203,8 +205,9 @@ export default function ImportPage() {
       alert('¡Importación completada! Refrescá la página para ver tus datos.')
     } catch (error: any) {
       console.error('Import error:', error)
-      addLog(`❌ Error general: ${error.message}`)
-      alert(`Error: ${error.message}`)
+      const message = error instanceof Error ? error.message : String(error)
+      addLog(`❌ Error general: ${message}`)
+      alert(`Error: ${message}`)
     } finally {
       setImporting(false)
     }

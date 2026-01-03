@@ -33,16 +33,18 @@ export default function LoginPage() {
     if (isLogin) {
       const { error } = await signIn(email, password)
       if (error) {
-        setError(error.message === 'Invalid login credentials'
+        const message = error instanceof Error ? error.message : String(error)
+        setError(message === 'Invalid login credentials'
           ? 'Email o contraseña incorrectos'
-          : error.message)
+          : message)
         setLoading(false)
       }
       // Don't navigate here - let useEffect handle it when user is ready
     } else {
       const { error } = await signUp(email, password)
       if (error) {
-        setError(error.message)
+        const message = error instanceof Error ? error.message : String(error)
+        setError(message)
       } else {
         setSuccess('¡Cuenta creada! Revisá tu email para confirmar.')
       }

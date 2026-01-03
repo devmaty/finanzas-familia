@@ -32,7 +32,9 @@ export default function DashboardPage() {
   const tarjetaMap = Object.fromEntries(tarjetas.map(t => [t.id, t]))
 
   useEffect(() => {
-    fetchDolar().then(setDolar)
+    fetchDolar()
+      .then(setDolar)
+      .catch(err => console.error('Error al obtener cotización del dólar:', err))
   }, [])
 
   // Check if viewing a different month than current (SOLO AL CARGAR)
