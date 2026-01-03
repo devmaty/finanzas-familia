@@ -37,14 +37,20 @@ export default function DashboardPage() {
       .catch(err => console.error('Error al obtener cotización del dólar:', err))
   }, [])
 
-  // Check if viewing a different month than current (SOLO AL CARGAR)
+  // Check if viewing a different month than current (SOLO AL CARGAR UNA VEZ POR SESIÓN)
   useEffect(() => {
     if (!loading && !hasShownInitialAlert) {
-      const today = new Date()
-      const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+      // Check if we already showed the alert in this session
+      const alertShownThisSession = sessionStorage.getItem('monthAlertShown')
 
-      if (monthKey !== currentMonthKey) {
-        setShowMonthAlert(true)
+      if (!alertShownThisSession) {
+        const today = new Date()
+        const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+
+        if (monthKey !== currentMonthKey) {
+          setShowMonthAlert(true)
+          sessionStorage.setItem('monthAlertShown', 'true')
+        }
       }
       setHasShownInitialAlert(true)
     }
@@ -335,15 +341,17 @@ export default function DashboardPage() {
 
           {/* Diferencia */}
           <div className={`rounded-xl p-4 ${diferenciaARS > 0 ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'}`}>
-            <div className="text-slate-600 font-bold text-sm mb-2">📊 Diferencia</div>
+            <div className="text-slate-600 font-bold text-sm mb-2">
+              📊 Diferencia
+              <div className="text-xs font-normal text-slate-500 mt-1">
+                Cuánto {diferenciaARS > 0 ? 'menos' : 'más'} vas a gastar
+              </div>
+            </div>
             <div className={`text-lg font-bold ${diferenciaARS > 0 ? 'text-emerald-700' : 'text-red-700'}`}>
               {diferenciaARS > 0 ? '-' : '+'}{formatMoney(Math.abs(diferenciaARS))}
             </div>
             <div className={`text-xs ${diferenciaUSD >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
               {diferenciaUSD >= 0 ? '-' : '+'}{formatMoney(Math.abs(diferenciaUSD), 'USD')}
-            </div>
-            <div className="text-xs text-slate-500 mt-1">
-              (Total ≈ {diferenciaTotal > 0 ? '-' : '+'}{formatMoney(Math.abs(diferenciaTotal))})
             </div>
           </div>
         </div>

@@ -31,7 +31,9 @@ type DataContextType = {
   monthKey: string
   fetchAll: () => Promise<void>
   changeMonth: (delta: number) => void
-  addMovimiento: (tipo: 'pesos' | 'usd', monto: number) => Promise<{ error: any }>
+  addMovimiento: (tipo: 'pesos' | 'usd', monto: number, descripcion?: string) => Promise<{ error: any }>
+  updateMovimiento: (id: string, data: any) => Promise<{ error: any }>
+  deleteMovimiento: (id: string) => Promise<{ error: any }>
   addMeta: (data: any) => Promise<{ error: any }>
   updateMeta: (id: string, data: any) => Promise<{ error: any }>
   deleteMeta: (id: string) => Promise<{ error: any }>
@@ -125,13 +127,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
           // Fallback para documentos sin fecha válida
           fecha = new Date().toISOString()
         }
-        return {
+        const movimiento: MovimientoAhorro = {
           id: doc.id,
           tipo: data.tipo,
           monto: data.monto,
           user_id: data.user_id,
           fecha
         }
+        if (data.descripcion) {
+          movimiento.descripcion = data.descripcion
+        }
+        return movimiento
       }) as MovimientoAhorro[]
 
       console.log('📊 [Firebase useData] Movimientos result:', movimientosData.length, 'rows')
@@ -369,20 +375,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, [user, authLoading, fetchAll])
 
-  const addMovimiento = useCallback(async (tipo: 'pesos' | 'usd', monto: number) => {
+  const addMovimiento = useCallback(async (tipo: 'pesos' | 'usd', monto: number, descripcion?: string) => {
     if (!user) {
       console.error('💵 [Firebase addMovimiento] No user!')
       return { error: new Error('No user') }
     }
 
-    console.log('💵 [Firebase addMovimiento] called - tipo:', tipo, 'monto:', monto)
+    console.log('💵 [Firebase addMovimiento] called - tipo:', tipo, 'monto:', monto, 'descripcion:', descripcion)
     console.log('💵 [Firebase addMovimiento] user.uid:', user.uid)
 
-    const insertData = {
+    const insertData: any = {
       tipo,
       monto,
       user_id: user.uid,
       created_at: new Date().toISOString()
+    }
+
+    if (descripcion) {
+      insertData.descripcion = descripcion
     }
 
     console.log('💵 [Firebase addMovimiento] Inserting:', insertData)
@@ -397,6 +407,50 @@ export function DataProvider({ children }: { children: ReactNode }) {
       return { error: null }
     } catch (error) {
       console.error('💵 [Firebase addMovimiento] ERROR:', error)
+      return { error }
+    }
+  }, [user, fetchAll])
+
+  const updateMovimiento = useCallback(async (id: string, data: any) => {
+    if (!user) {
+      console.error('💵 [Firebase updateMovimiento] No user!')
+      return { error: new Error('No user') }
+    }
+
+    console.log('💵 [Firebase updateMovimiento] called', id, data)
+
+    try {
+      const movimientoRef = doc(db, 'movimientos_ahorro', id)
+      await updateDoc(movimientoRef, data)
+
+      console.log('💵 [Firebase updateMovimiento] SUCCESS - Calling fetchAll')
+      await fetchAll()
+
+      return { error: null }
+    } catch (error) {
+      console.error('💵 [Firebase updateMovimiento] ERROR:', error)
+      return { error }
+    }
+  }, [user, fetchAll])
+
+  const deleteMovimiento = useCallback(async (id: string) => {
+    if (!user) {
+      console.error('💵 [Firebase deleteMovimiento] No user!')
+      return { error: new Error('No user') }
+    }
+
+    console.log('💵 [Firebase deleteMovimiento] called', id)
+
+    try {
+      const movimientoRef = doc(db, 'movimientos_ahorro', id)
+      await deleteDoc(movimientoRef)
+
+      console.log('💵 [Firebase deleteMovimiento] SUCCESS - Calling fetchAll')
+      await fetchAll()
+
+      return { error: null }
+    } catch (error) {
+      console.error('💵 [Firebase deleteMovimiento] ERROR:', error)
       return { error }
     }
   }, [user, fetchAll])
@@ -885,6 +939,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     fetchAll,
     changeMonth,
     addMovimiento,
+    updateMovimiento,
+    deleteMovimiento,
     addMeta,
     updateMeta,
     deleteMeta,

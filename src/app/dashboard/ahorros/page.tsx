@@ -12,7 +12,7 @@ export default function AhorrosPage() {
   console.log('🟢🟢🟢 [AhorrosPage] COMPONENT RENDER')
 
   const { profile, updateProfile } = useAuth()
-  const { metas, movimientos, addMeta, updateMeta, deleteMeta, addMovimiento } = useData()
+  const { metas, movimientos, addMeta, updateMeta, deleteMeta, addMovimiento, updateMovimiento, deleteMovimiento } = useData()
 
   console.log('🟢🟢🟢 [AhorrosPage] addMovimiento function reference:', addMovimiento)
 
@@ -24,6 +24,10 @@ export default function AhorrosPage() {
   })
   const [inputPesos, setInputPesos] = useState('')
   const [inputUsd, setInputUsd] = useState('')
+  const [descPesos, setDescPesos] = useState('')
+  const [descUsd, setDescUsd] = useState('')
+  const [showMovimientosModal, setShowMovimientosModal] = useState(false)
+  const [currentTipo, setCurrentTipo] = useState<'pesos' | 'usd'>('pesos')
 
   useEffect(() => {
     fetchDolar()
@@ -61,11 +65,17 @@ export default function AhorrosPage() {
     console.log('🟢 [AhorrosPage] updateProfile completed')
 
     console.log('🟢 [AhorrosPage] Calling addMovimiento...')
-    await addMovimiento(tipo, finalAmount)
+    const descripcion = tipo === 'pesos' ? descPesos : descUsd
+    await addMovimiento(tipo, finalAmount, descripcion || undefined)
     console.log('🟢 [AhorrosPage] addMovimiento completed')
 
-    if (tipo === 'pesos') setInputPesos('')
-    else setInputUsd('')
+    if (tipo === 'pesos') {
+      setInputPesos('')
+      setDescPesos('')
+    } else {
+      setInputUsd('')
+      setDescUsd('')
+    }
   }
 
   const handleSaveMeta = async () => {
@@ -167,10 +177,17 @@ export default function AhorrosPage() {
           </div>
           <input
             type="number"
-            className="input mb-3"
+            className="input mb-2"
             placeholder="Monto"
             value={inputPesos}
             onChange={e => setInputPesos(e.target.value)}
+          />
+          <input
+            type="text"
+            className="input mb-3"
+            placeholder="Descripción (opcional)"
+            value={descPesos}
+            onChange={e => setDescPesos(e.target.value)}
           />
           <div className="flex gap-2">
             <button onClick={() => {
@@ -187,19 +204,35 @@ export default function AhorrosPage() {
             </button>
           </div>
           {/* Historial */}
-          <div className="mt-4 pt-4 border-t border-slate-200 max-h-24 overflow-y-auto">
-            {movimientos.filter(m => m.tipo === 'pesos').length > 0 ? (
-              movimientos.filter(m => m.tipo === 'pesos').slice(0, 5).map(m => (
-                <div key={m.id} className="flex justify-between text-sm py-1">
-                  <span className="text-slate-500">{new Date(m.fecha).toLocaleDateString('es-AR')}</span>
-                  <span className={m.monto > 0 ? 'text-emerald-600' : 'text-red-600'}>
-                    {m.monto > 0 ? '+' : ''}{formatMoney(m.monto)}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <p className="text-slate-400 text-sm text-center">Sin movimientos</p>
-            )}
+          <div className="mt-4 pt-4 border-t border-slate-200">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs text-slate-500 font-semibold">HISTORIAL</span>
+              {movimientos.filter(m => m.tipo === 'pesos').length > 3 && (
+                <button
+                  onClick={() => { setCurrentTipo('pesos'); setShowMovimientosModal(true) }}
+                  className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                >
+                  Ver todos
+                </button>
+              )}
+            </div>
+            <div className="max-h-32 overflow-y-auto space-y-1">
+              {movimientos.filter(m => m.tipo === 'pesos').length > 0 ? (
+                movimientos.filter(m => m.tipo === 'pesos').slice(0, 3).map(m => (
+                  <div key={m.id} className="flex justify-between items-center text-sm py-1.5 hover:bg-slate-50 rounded px-2">
+                    <div className="flex-1">
+                      <div className="text-slate-500 text-xs">{new Date(m.fecha).toLocaleDateString('es-AR')}</div>
+                      {m.descripcion && <div className="text-slate-600 text-xs truncate">{m.descripcion}</div>}
+                    </div>
+                    <span className={`font-medium ${m.monto > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {m.monto > 0 ? '+' : ''}{formatMoney(m.monto)}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-slate-400 text-sm text-center py-2">Sin movimientos</p>
+              )}
+            </div>
           </div>
         </div>
 
@@ -214,10 +247,17 @@ export default function AhorrosPage() {
           </div>
           <input
             type="number"
-            className="input mb-3"
+            className="input mb-2"
             placeholder="Monto"
             value={inputUsd}
             onChange={e => setInputUsd(e.target.value)}
+          />
+          <input
+            type="text"
+            className="input mb-3"
+            placeholder="Descripción (opcional)"
+            value={descUsd}
+            onChange={e => setDescUsd(e.target.value)}
           />
           <div className="flex gap-2">
             <button onClick={() => {
@@ -234,19 +274,35 @@ export default function AhorrosPage() {
             </button>
           </div>
           {/* Historial */}
-          <div className="mt-4 pt-4 border-t border-slate-200 max-h-24 overflow-y-auto">
-            {movimientos.filter(m => m.tipo === 'usd').length > 0 ? (
-              movimientos.filter(m => m.tipo === 'usd').slice(0, 5).map(m => (
-                <div key={m.id} className="flex justify-between text-sm py-1">
-                  <span className="text-slate-500">{new Date(m.fecha).toLocaleDateString('es-AR')}</span>
-                  <span className={m.monto > 0 ? 'text-emerald-600' : 'text-red-600'}>
-                    {m.monto > 0 ? '+' : ''}{formatMoney(m.monto, 'USD')}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <p className="text-slate-400 text-sm text-center">Sin movimientos</p>
-            )}
+          <div className="mt-4 pt-4 border-t border-slate-200">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs text-slate-500 font-semibold">HISTORIAL</span>
+              {movimientos.filter(m => m.tipo === 'usd').length > 3 && (
+                <button
+                  onClick={() => { setCurrentTipo('usd'); setShowMovimientosModal(true) }}
+                  className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                >
+                  Ver todos
+                </button>
+              )}
+            </div>
+            <div className="max-h-32 overflow-y-auto space-y-1">
+              {movimientos.filter(m => m.tipo === 'usd').length > 0 ? (
+                movimientos.filter(m => m.tipo === 'usd').slice(0, 3).map(m => (
+                  <div key={m.id} className="flex justify-between items-center text-sm py-1.5 hover:bg-slate-50 rounded px-2">
+                    <div className="flex-1">
+                      <div className="text-slate-500 text-xs">{new Date(m.fecha).toLocaleDateString('es-AR')}</div>
+                      {m.descripcion && <div className="text-slate-600 text-xs truncate">{m.descripcion}</div>}
+                    </div>
+                    <span className={`font-medium ${m.monto > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {m.monto > 0 ? '+' : ''}{formatMoney(m.monto, 'USD')}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-slate-400 text-sm text-center py-2">Sin movimientos</p>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -408,6 +464,49 @@ export default function AhorrosPage() {
               <button onClick={handleSaveMeta} className="btn btn-primary w-full justify-center">
                 {editingMeta ? 'Guardar' : 'Crear Meta 🎯'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Historial Completo */}
+      {showMovimientosModal && (
+        <div className="modal-overlay" onClick={() => setShowMovimientosModal(false)}>
+          <div className="modal max-w-2xl" onClick={e => e.stopPropagation()}>
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="font-bold text-lg">
+                Historial de {currentTipo === 'pesos' ? 'Pesos' : 'Dólares'}
+              </h3>
+              <button onClick={() => setShowMovimientosModal(false)} className="p-1 hover:bg-slate-100 rounded">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 max-h-96 overflow-y-auto">
+              <div className="space-y-2">
+                {movimientos.filter(m => m.tipo === currentTipo).map(m => (
+                  <div key={m.id} className="flex items-center justify-between p-3 border border-slate-200 rounded-lg hover:bg-slate-50">
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">{new Date(m.fecha).toLocaleDateString('es-AR', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</div>
+                      {m.descripcion && <div className="text-xs text-slate-600 mt-1">{m.descripcion}</div>}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`font-bold ${m.monto > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {m.monto > 0 ? '+' : ''}{formatMoney(m.monto, currentTipo === 'usd' ? 'USD' : 'ARS')}
+                      </span>
+                      <button
+                        onClick={() => {
+                          if (confirm('¿Eliminar este movimiento?')) {
+                            deleteMovimiento(m.id)
+                          }
+                        }}
+                        className="p-2 hover:bg-red-50 rounded-lg text-red-500"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
