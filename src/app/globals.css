@@ -7,14 +7,32 @@
   --background-rgb: 248, 250, 252;
 }
 
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   color: rgb(var(--foreground-rgb));
   background: rgb(var(--background-rgb));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
 }
 
 @layer components {
   .btn {
     @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
   }
   
   .btn-primary {
@@ -43,6 +61,7 @@ body {
   
   .input {
     @apply w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 transition-colors;
+    font-size: 16px; /* Evita zoom en iOS */
   }
   
   .label {
@@ -79,6 +98,29 @@ body {
   
   .modal {
     @apply bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto;
+  }
+}
+
+/* Mejoras de responsive */
+@media (max-width: 640px) {
+  .card {
+    @apply rounded-xl;
+  }
+
+  .modal {
+    @apply rounded-t-2xl rounded-b-none max-h-[95vh];
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+}
+
+/* Soporte para notch/safe area en iOS */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
   }
 }
 
