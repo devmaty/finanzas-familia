@@ -25,13 +25,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'es_AR',
-    url: baseUrl,
+    url: '/',
     title: 'FinControl - Controlá tus Finanzas',
     description: 'Plataforma profesional para el control y seguimiento de tus finanzas personales y familiares.',
     siteName: 'FinControl',
     images: [
       {
-        url: `${baseUrl}/og-image.png`,
+        url: '/og-image.png',
+        secureUrl: '/og-image.png',
         width: 1200,
         height: 630,
         alt: 'FinControl - Plataforma de Control Financiero',
@@ -43,7 +44,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'FinControl - Controlá tus Finanzas',
     description: 'Plataforma profesional para el control y seguimiento de tus finanzas personales y familiares.',
-    images: [`${baseUrl}/og-image.png`],
+    images: ['/og-image.png'],
   },
   appleWebApp: {
     capable: true,
