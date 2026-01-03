@@ -183,8 +183,13 @@ export default function DashboardPage() {
 
   // Budget check (solo si está habilitado)
   const budgetARS = profile?.budget_ars || 0
-  const hasBudget = budgetARS > 0
-  const budgetPct = hasBudget ? (totalPagar / budgetARS) * 100 : 0
+  const budgetUSD = profile?.budget_usd || 0
+  const hasBudget = budgetARS > 0 || budgetUSD > 0
+
+  // Calcular presupuesto total y gastado total en ARS
+  const budgetTotalARS = budgetARS + (budgetUSD * dolar)
+  const gastadoTotalARS = totalPagar + (totalUSD * dolar)
+  const budgetPct = hasBudget ? (gastadoTotalARS / budgetTotalARS) * 100 : 0
   const budgetStatus = budgetPct >= 100 ? 'danger' : budgetPct >= 80 ? 'warning' : 'ok'
 
   // Alertas
@@ -283,20 +288,30 @@ export default function DashboardPage() {
             <div>
               <div className="text-sm opacity-80">Gastado</div>
               <div className="text-xl font-bold">{formatMoney(totalPagar)}</div>
+              {totalUSD > 0 && (
+                <div className="text-sm opacity-80">+{formatMoney(totalUSD, 'USD')}</div>
+              )}
             </div>
             <div>
               <div className="text-sm opacity-80">Límite</div>
-              <div className="text-xl font-bold">{formatMoney(budgetARS)}</div>
+              {budgetARS > 0 && (
+                <div className="text-xl font-bold">{formatMoney(budgetARS)}</div>
+              )}
+              {budgetUSD > 0 && (
+                <div className={budgetARS > 0 ? "text-sm opacity-80" : "text-xl font-bold"}>
+                  {budgetARS > 0 ? '+' : ''}{formatMoney(budgetUSD, 'USD')}
+                </div>
+              )}
             </div>
             <div>
-              <div className="text-sm opacity-80">{budgetARS - totalPagar >= 0 ? 'Disponible' : 'Excedido'}</div>
-              <div className="text-xl font-bold">{formatMoney(Math.abs(budgetARS - totalPagar))}</div>
+              <div className="text-sm opacity-80">{budgetTotalARS - gastadoTotalARS >= 0 ? 'Disponible' : 'Excedido'}</div>
+              <div className="text-xl font-bold">{formatMoney(Math.abs(budgetTotalARS - gastadoTotalARS))}</div>
             </div>
           </div>
           <div className="bg-white/20 h-3 rounded-full overflow-hidden">
-            <div 
+            <div
               className={`h-full rounded-full transition-all ${
-                budgetStatus === 'danger' ? 'bg-red-400' : 
+                budgetStatus === 'danger' ? 'bg-red-400' :
                 budgetStatus === 'warning' ? 'bg-amber-400' : 'bg-emerald-400'
               }`}
               style={{ width: `${Math.min(budgetPct, 100)}%` }}

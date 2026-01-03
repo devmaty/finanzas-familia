@@ -58,10 +58,18 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 backdrop-blur rounded-2xl mb-4">
-            <span className="text-4xl">💎</span>
+            <svg className="w-12 h-12" viewBox="0 0 100 100" fill="none">
+              <g fill="white">
+                <rect x="25" y="45" width="10" height="30" rx="2"/>
+                <rect x="45" y="35" width="10" height="40" rx="2"/>
+                <rect x="65" y="25" width="10" height="50" rx="2"/>
+                <path d="M 22 55 L 38 45 L 52 35 L 72 20" stroke="white" strokeWidth="3" fill="none" strokeLinecap="round"/>
+                <circle cx="72" cy="20" r="4" fill="white"/>
+              </g>
+            </svg>
           </div>
-          <h1 className="text-3xl font-bold text-white">Finanzas Familia</h1>
-          <p className="text-white/80 mt-2">Control financiero inteligente</p>
+          <h1 className="text-3xl font-bold text-white">FinControl</h1>
+          <p className="text-white/80 mt-2">Controlá tus finanzas personales</p>
         </div>
 
         {/* Card */}
@@ -158,7 +166,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="text-center text-white/60 mt-6 text-sm">
-          © 2025 Finanzas Familia
+          © 2025 FinControl
         </p>
       </div>
     </div>

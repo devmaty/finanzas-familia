@@ -74,8 +74,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Menu className="w-6 h-6" />
         </button>
         <div className="flex items-center gap-2">
-          <span className="text-2xl">💎</span>
-          <span className="font-bold">Finanzas</span>
+          <svg className="w-6 h-6" viewBox="0 0 100 100" fill="none">
+            <defs>
+              <linearGradient id="grad-mobile" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style={{ stopColor: '#6366f1', stopOpacity: 1 }} />
+                <stop offset="100%" style={{ stopColor: '#8b5cf6', stopOpacity: 1 }} />
+              </linearGradient>
+            </defs>
+            <g fill="url(#grad-mobile)">
+              <rect x="25" y="45" width="10" height="30" rx="2"/>
+              <rect x="45" y="35" width="10" height="40" rx="2"/>
+              <rect x="65" y="25" width="10" height="50" rx="2"/>
+            </g>
+          </svg>
+          <span className="font-bold">FinControl</span>
         </div>
         <div className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-semibold">
           💵 {formatMoney(dolar)}
@@ -101,10 +113,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <span className="text-xl">💎</span>
+              <svg className="w-6 h-6" viewBox="0 0 100 100" fill="none">
+                <g fill="white">
+                  <rect x="25" y="45" width="10" height="30" rx="2"/>
+                  <rect x="45" y="35" width="10" height="40" rx="2"/>
+                  <rect x="65" y="25" width="10" height="50" rx="2"/>
+                </g>
+              </svg>
             </div>
             <div>
-              <div className="font-bold text-sm">Finanzas Familia</div>
+              <div className="font-bold text-sm">FinControl</div>
               <div className="text-xs text-slate-500">{profile?.nombre}</div>
             </div>
           </div>
