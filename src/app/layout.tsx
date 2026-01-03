@@ -6,6 +6,9 @@ import { DataProvider } from '@/hooks/useData'
 
 const inter = Inter({ subsets: ['latin'] })
 
+// URL base de la aplicación (cambiar según el entorno)
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://app.nexuno.com.ar'
+
 export const metadata: Metadata = {
   title: 'FinControl - Controlá tus Finanzas',
   description: 'Plataforma profesional para el control y seguimiento de tus finanzas personales y familiares. Gestioná gastos, proyecciones, ahorros y patrimonio en un solo lugar.',
@@ -18,16 +21,17 @@ export const metadata: Metadata = {
     maximumScale: 5,
     userScalable: true,
   },
+  metadataBase: new URL(baseUrl),
   openGraph: {
     type: 'website',
     locale: 'es_AR',
-    url: 'https://fincontrol.app',
+    url: baseUrl,
     title: 'FinControl - Controlá tus Finanzas',
     description: 'Plataforma profesional para el control y seguimiento de tus finanzas personales y familiares.',
     siteName: 'FinControl',
     images: [
       {
-        url: '/og-image.png',
+        url: `${baseUrl}/og-image.png`,
         width: 1200,
         height: 630,
         alt: 'FinControl - Plataforma de Control Financiero',
@@ -39,7 +43,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'FinControl - Controlá tus Finanzas',
     description: 'Plataforma profesional para el control y seguimiento de tus finanzas personales y familiares.',
-    images: ['/og-image.png'],
+    images: [`${baseUrl}/og-image.png`],
   },
   appleWebApp: {
     capable: true,
