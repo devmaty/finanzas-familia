@@ -73,7 +73,8 @@ export default function GastosPage() {
   }
 
   // Sort
-  const [sortField, sortDir] = filters.sort.split('-')
+  const sortParts = filters.sort.split('-')
+  const [sortField, sortDir] = sortParts.length === 2 ? sortParts : ['monto', 'desc']
   gastosMes.sort((a, b) => {
     let vA, vB
     if (sortField === 'monto') {

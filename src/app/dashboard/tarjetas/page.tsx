@@ -75,9 +75,10 @@ export default function TarjetasPage() {
         const { error } = await updateTarjeta(editing.id, data)
         if (error) {
           console.error('Error updating:', error)
+          const message = error instanceof Error ? error.message : String(error)
           setAlertData({
             title: 'Error al actualizar',
-            message: error.message,
+            message: message,
             variant: 'error'
           })
           setShowAlert(true)
@@ -88,9 +89,10 @@ export default function TarjetasPage() {
         const { error } = await addTarjeta(data)
         if (error) {
           console.error('Error adding:', error)
+          const message = error instanceof Error ? error.message : String(error)
           setAlertData({
             title: 'Error al agregar',
-            message: error.message,
+            message: message,
             variant: 'error'
           })
           setShowAlert(true)
@@ -125,9 +127,10 @@ export default function TarjetasPage() {
 
     const { error } = await deleteTarjeta(deleteTargetId)
     if (error) {
+      const message = error instanceof Error ? error.message : String(error)
       setAlertData({
         title: 'Error al eliminar',
-        message: error.message,
+        message: message,
         variant: 'error'
       })
       setShowAlert(true)
