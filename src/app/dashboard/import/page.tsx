@@ -5,12 +5,20 @@ import { useAuth } from '@/hooks/useAuth'
 import { db } from '@/lib/firebase'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { Download, CheckCircle, AlertCircle, Loader } from 'lucide-react'
+import { AlertModal } from '@/components/Modal'
 
 interface ImportProgress {
   collection: string
   status: 'pending' | 'loading' | 'success' | 'error'
   count: number
   error?: string
+}
+
+interface ModalState {
+  isOpen: boolean
+  title: string
+  message: string
+  variant: 'success' | 'error' | 'warning' | 'info'
 }
 
 export default function ImportPage() {
@@ -21,6 +29,20 @@ export default function ImportPage() {
   const [testing, setTesting] = useState(false)
   const [progress, setProgress] = useState<ImportProgress[]>([])
   const [log, setLog] = useState<string[]>([])
+  const [modal, setModal] = useState<ModalState>({
+    isOpen: false,
+    title: '',
+    message: '',
+    variant: 'info'
+  })
+
+  const showModal = (title: string, message: string, variant: ModalState['variant'] = 'info') => {
+    setModal({ isOpen: true, title, message, variant })
+  }
+
+  const closeModal = () => {
+    setModal(prev => ({ ...prev, isOpen: false }))
+  }
 
   const addLog = (message: string) => {
     console.log(message)
@@ -99,7 +121,7 @@ export default function ImportPage() {
 
   const testConnection = async () => {
     if (!supabaseKey) {
-      alert('Por favor ingresá la Supabase Key')
+      showModal('Falta información', 'Por favor ingresá la Supabase Key', 'warning')
       return
     }
 
@@ -125,7 +147,11 @@ export default function ImportPage() {
         const errorText = await response.text()
         addLog(`❌ Error de conexión: ${response.status} ${response.statusText}`)
         addLog(`Detalles: ${errorText}`)
-        alert(`Error: ${response.status} - ${response.statusText}\n\nVerificá que la clave sea correcta (debe ser Service Role Key, no Anon Key)`)
+        showModal(
+          'Error de conexión',
+          `Error: ${response.status} - ${response.statusText}\n\nVerificá que la clave sea correcta (debe ser Service Role Key, no Anon Key)`,
+          'error'
+        )
         setTesting(false)
         return
       }
@@ -140,14 +166,23 @@ export default function ImportPage() {
         addLog(`⚠️ ADVERTENCIA: La tabla gastos está vacía o RLS está bloqueando el acceso`)
         addLog(`💡 Asegurate de usar la "Service Role Key" (no la Anon Key)`)
         addLog(`💡 La Service Role Key comienza con "eyJ..." y es más larga`)
-        alert('Conexión exitosa, pero no se encontraron gastos.\n\nVerificá:\n1. Que estés usando la Service Role Key (no Anon Key)\n2. Que haya datos en Supabase')
+        showModal(
+          'Conexión exitosa',
+          'Conexión exitosa, pero no se encontraron gastos.\n\nVerificá:\n1. Que estés usando la Service Role Key (no Anon Key)\n2. Que haya datos en Supabase',
+          'warning'
+        )
       } else {
-        alert(`¡Conexión exitosa! Se encontraron ${count} gastos.\n\nYa podés iniciar la importación.`)
+        showModal(
+          '¡Conexión exitosa!',
+          `Se encontraron ${count} gastos.\n\nYa podés iniciar la importación.`,
+          'success'
+        )
       }
     } catch (error: any) {
       console.error('Test error:', error)
-      addLog(`❌ Error: ${error.message}`)
-      alert(`Error de conexión: ${error.message}`)
+      const message = error instanceof Error ? error.message : String(error)
+      addLog(`❌ Error: ${message}`)
+      showModal('Error de conexión', `Error de conexión: ${message}`, 'error')
     } finally {
       setTesting(false)
     }
@@ -155,12 +190,12 @@ export default function ImportPage() {
 
   const startImport = async () => {
     if (!user || !profile) {
-      alert('Debes estar logueado para importar')
+      showModal('No autenticado', 'Debes estar logueado para importar', 'warning')
       return
     }
 
     if (!supabaseKey) {
-      alert('Por favor ingresá la Supabase Key')
+      showModal('Falta información', 'Por favor ingresá la Supabase Key', 'warning')
       return
     }
 
@@ -194,17 +229,19 @@ export default function ImportPage() {
           updateProgress(firebase, 'success', count)
         } catch (error: any) {
           console.error(`Error importing ${firebase}:`, error)
-          updateProgress(firebase, 'error', 0, error.message)
-          addLog(`❌ Error en ${firebase}: ${error.message}`)
+          const message = error instanceof Error ? error.message : String(error)
+          updateProgress(firebase, 'error', 0, message)
+          addLog(`❌ Error en ${firebase}: ${message}`)
         }
       }
 
       addLog('🎉 ¡Importación completada!')
-      alert('¡Importación completada! Refrescá la página para ver tus datos.')
+      showModal('¡Importación completada!', 'Refrescá la página para ver tus datos.', 'success')
     } catch (error: any) {
       console.error('Import error:', error)
-      addLog(`❌ Error general: ${error.message}`)
-      alert(`Error: ${error.message}`)
+      const message = error instanceof Error ? error.message : String(error)
+      addLog(`❌ Error general: ${message}`)
+      showModal('Error', `Error: ${message}`, 'error')
     } finally {
       setImporting(false)
     }
@@ -369,6 +406,15 @@ export default function ImportPage() {
           <li>• Esta página es temporal - podés borrarla después de importar</li>
         </ul>
       </div>
+
+      {/* Modal */}
+      <AlertModal
+        isOpen={modal.isOpen}
+        onClose={closeModal}
+        title={modal.title}
+        message={modal.message}
+        variant={modal.variant}
+      />
     </div>
   )
 }

@@ -32,18 +32,23 @@ export default function DashboardPage() {
   const tarjetaMap = Object.fromEntries(tarjetas.map(t => [t.id, t]))
 
   useEffect(() => {
-    fetchDolar().then(setDolar)
+    fetchDolar()
+      .then(setDolar)
+      .catch(err => console.error('Error al obtener cotización del dólar:', err))
   }, [])
 
-  // Check if viewing a different month than current (SOLO AL CARGAR)
+  // Check if viewing a different month than current (AL INICIAR CADA SESIÓN)
   useEffect(() => {
     if (!loading && !hasShownInitialAlert) {
       const today = new Date()
       const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
 
+      // Siempre mostrar si el mes guardado no es el actual
       if (monthKey !== currentMonthKey) {
         setShowMonthAlert(true)
+        sessionStorage.setItem('monthAlertShown', 'true')
       }
+
       setHasShownInitialAlert(true)
     }
   }, [loading, hasShownInitialAlert, monthKey])
@@ -178,8 +183,13 @@ export default function DashboardPage() {
 
   // Budget check (solo si está habilitado)
   const budgetARS = profile?.budget_ars || 0
-  const hasBudget = budgetARS > 0
-  const budgetPct = hasBudget ? (totalPagar / budgetARS) * 100 : 0
+  const budgetUSD = profile?.budget_usd || 0
+  const hasBudget = budgetARS > 0 || budgetUSD > 0
+
+  // Calcular presupuesto total y gastado total en ARS
+  const budgetTotalARS = budgetARS + (budgetUSD * dolar)
+  const gastadoTotalARS = totalPagar + (totalUSD * dolar)
+  const budgetPct = hasBudget ? (gastadoTotalARS / budgetTotalARS) * 100 : 0
   const budgetStatus = budgetPct >= 100 ? 'danger' : budgetPct >= 80 ? 'warning' : 'ok'
 
   // Alertas
@@ -278,20 +288,30 @@ export default function DashboardPage() {
             <div>
               <div className="text-sm opacity-80">Gastado</div>
               <div className="text-xl font-bold">{formatMoney(totalPagar)}</div>
+              {totalUSD > 0 && (
+                <div className="text-sm opacity-80">+{formatMoney(totalUSD, 'USD')}</div>
+              )}
             </div>
             <div>
               <div className="text-sm opacity-80">Límite</div>
-              <div className="text-xl font-bold">{formatMoney(budgetARS)}</div>
+              {budgetARS > 0 && (
+                <div className="text-xl font-bold">{formatMoney(budgetARS)}</div>
+              )}
+              {budgetUSD > 0 && (
+                <div className={budgetARS > 0 ? "text-sm opacity-80" : "text-xl font-bold"}>
+                  {budgetARS > 0 ? '+' : ''}{formatMoney(budgetUSD, 'USD')}
+                </div>
+              )}
             </div>
             <div>
-              <div className="text-sm opacity-80">{budgetARS - totalPagar >= 0 ? 'Disponible' : 'Excedido'}</div>
-              <div className="text-xl font-bold">{formatMoney(Math.abs(budgetARS - totalPagar))}</div>
+              <div className="text-sm opacity-80">{budgetTotalARS - gastadoTotalARS >= 0 ? 'Disponible' : 'Excedido'}</div>
+              <div className="text-xl font-bold">{formatMoney(Math.abs(budgetTotalARS - gastadoTotalARS))}</div>
             </div>
           </div>
           <div className="bg-white/20 h-3 rounded-full overflow-hidden">
-            <div 
+            <div
               className={`h-full rounded-full transition-all ${
-                budgetStatus === 'danger' ? 'bg-red-400' : 
+                budgetStatus === 'danger' ? 'bg-red-400' :
                 budgetStatus === 'warning' ? 'bg-amber-400' : 'bg-emerald-400'
               }`}
               style={{ width: `${Math.min(budgetPct, 100)}%` }}
@@ -332,10 +352,15 @@ export default function DashboardPage() {
           </div>
 
           {/* Diferencia */}
-          <div className={`rounded-xl p-4 ${diferenciaTotal > 0 ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'}`}>
-            <div className="text-slate-600 font-bold text-sm mb-2">📊 Diferencia</div>
-            <div className={`text-lg font-bold ${diferenciaTotal > 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-              {diferenciaTotal > 0 ? '-' : '+'}{formatMoney(Math.abs(diferenciaTotal))}
+          <div className={`rounded-xl p-4 ${diferenciaARS > 0 ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'}`}>
+            <div className="text-slate-600 font-bold text-sm mb-2">
+              📊 Diferencia
+              <div className="text-xs font-normal text-slate-500 mt-1">
+                Cuánto {diferenciaARS > 0 ? 'menos' : 'más'} vas a gastar
+              </div>
+            </div>
+            <div className={`text-lg font-bold ${diferenciaARS > 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+              {diferenciaARS > 0 ? '-' : '+'}{formatMoney(Math.abs(diferenciaARS))}
             </div>
             <div className={`text-xs ${diferenciaUSD >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
               {diferenciaUSD >= 0 ? '-' : '+'}{formatMoney(Math.abs(diferenciaUSD), 'USD')}
@@ -348,20 +373,20 @@ export default function DashboardPage() {
           <div className="grid grid-cols-2 gap-4 text-center">
             <div>
               <div className="text-xs text-slate-500 uppercase font-semibold">Este mes ({getMonthName(currentMonth).split(' ')[0]})</div>
-              <div className="text-xl font-bold mt-1">{formatMoney(totalActual)}</div>
-              <div className="text-xs text-emerald-600">{formatMoney(totalUSD, 'USD')}</div>
+              <div className="text-xl font-bold mt-1">{formatMoney(totalARS + totalImpuestos)}</div>
+              <div className="text-xs text-slate-500">(+ {formatMoney(totalUSD, 'USD')} ≈ {formatMoney(usdEnPesos)})</div>
             </div>
             <div>
               <div className="text-xs text-slate-500 uppercase font-semibold">Próximo ({getMonthName(nextMonth).split(' ')[0]})</div>
-              <div className="text-xl font-bold mt-1">{formatMoney(totalProximo)}</div>
-              <div className="text-xs text-emerald-600">{formatMoney(proximoUSD, 'USD')}</div>
+              <div className="text-xl font-bold mt-1">{formatMoney(proximoARS + proximoImpuestos)}</div>
+              <div className="text-xs text-slate-500">(+ {formatMoney(proximoUSD, 'USD')} ≈ {formatMoney(proximoUSD * dolar)})</div>
             </div>
           </div>
           <div className="text-center text-sm text-slate-500 mt-3 pt-3 border-t border-slate-200">
-            {diferenciaTotal > 0 
-              ? `🎉 Vas a gastar ${formatMoney(diferenciaTotal)} menos` 
-              : diferenciaTotal < 0 
-                ? `⚠️ Vas a gastar ${formatMoney(Math.abs(diferenciaTotal))} más`
+            {diferenciaTotal > 0
+              ? `🎉 Vas a gastar ${formatMoney(diferenciaTotal)} menos (total en ARS)`
+              : diferenciaTotal < 0
+                ? `⚠️ Vas a gastar ${formatMoney(Math.abs(diferenciaTotal))} más (total en ARS)`
                 : '➡️ Mismo gasto proyectado'
             }
           </div>
@@ -564,7 +589,17 @@ export default function DashboardPage() {
                 Estos gastos no aparecerán en {getMonthName(nextMonth)}:
               </p>
               <div className="space-y-2">
-                {gastosTerminan.map(g => {
+                {gastosTerminan
+                  .sort((a, b) => {
+                    // Primero ordenar por moneda: USD primero
+                    if (a.moneda === 'USD' && b.moneda !== 'USD') return -1
+                    if (a.moneda !== 'USD' && b.moneda === 'USD') return 1
+                    // Luego por monto de mayor a menor
+                    const montoA = a.cuotas > 1 ? a.monto / a.cuotas : a.monto
+                    const montoB = b.cuotas > 1 ? b.monto / b.cuotas : b.monto
+                    return montoB - montoA
+                  })
+                  .map(g => {
                   const monto = g.cuotas > 1 ? g.monto / g.cuotas : g.monto
                   return (
                     <div key={g.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
@@ -612,7 +647,7 @@ export default function DashboardPage() {
           }
         }}
         title="📅 Estás viendo un mes anterior"
-        message={`Estás revisando ${getMonthName(currentMonth)}.\n\n¿Querés ir al mes actual?`}
+        message={`Este es el último mes que estuviste revisando: ${getMonthName(currentMonth)}.\n\nRecordá que no es el mes actual. Podés cambiarlo con las flechas si querés ver otro mes.`}
         variant="info"
       />
     </div>

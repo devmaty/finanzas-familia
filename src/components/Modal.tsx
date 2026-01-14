@@ -1,6 +1,7 @@
 'use client'
 
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface ModalProps {
   isOpen: boolean
@@ -129,8 +130,6 @@ export function AlertModal({
   message,
   variant = 'info'
 }: AlertModalProps) {
-  if (!isOpen) return null
-
   const variants = {
     success: {
       icon: <CheckCircle className="w-16 h-16 text-emerald-500" />,
@@ -161,23 +160,47 @@ export function AlertModal({
   const config = variants[variant]
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal max-w-md" onClick={e => e.stopPropagation()}>
-        <div className={`p-8 ${config.bg} border-b ${config.border}`}>
-          <div className="flex flex-col items-center text-center gap-4">
-            {config.icon}
-            <div>
-              <h3 className={`font-bold text-xl mb-2 ${config.textColor}`}>{title}</h3>
-              <p className="text-slate-600 whitespace-pre-line">{message}</p>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="modal-overlay"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            transition={{ type: "spring", duration: 0.3 }}
+            className="modal max-w-md"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className={`p-8 ${config.bg} border-b ${config.border}`}>
+              <div className="flex flex-col items-center text-center gap-4">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+                >
+                  {config.icon}
+                </motion.div>
+                <div>
+                  <h3 className={`font-bold text-xl mb-2 ${config.textColor}`}>{title}</h3>
+                  <p className="text-slate-600 whitespace-pre-line">{message}</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-        <div className="p-4 flex justify-center">
-          <button onClick={onClose} className="btn btn-primary px-8">
-            Entendido
-          </button>
-        </div>
-      </div>
-    </div>
+            <div className="p-4 flex justify-center">
+              <button onClick={onClose} className="btn btn-primary px-8">
+                Entendido
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }

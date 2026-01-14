@@ -86,6 +86,7 @@ export interface MovimientoAhorro {
   user_id: string
   tipo: 'pesos' | 'usd'
   monto: number
+  descripcion?: string
   fecha: string
 }
 

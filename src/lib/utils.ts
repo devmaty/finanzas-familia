@@ -1,7 +1,9 @@
 export function formatMoney(amount: number, currency: 'ARS' | 'USD' = 'ARS'): string {
-  const formatted = Math.abs(amount).toLocaleString('es-AR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+  // Redondear pesos, mantener decimales en USD
+  const rounded = currency === 'ARS' ? Math.round(amount) : amount
+  const formatted = Math.abs(rounded).toLocaleString('es-AR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: currency === 'ARS' ? 0 : 2
   })
   return currency === 'USD' ? `U$S ${formatted}` : `$ ${formatted}`
 }

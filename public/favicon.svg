@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Fondo circular -->
+  <circle cx="50" cy="50" r="45" fill="url(#grad)"/>
+
+  <!-- Símbolo de dinero/gráfico -->
+  <g fill="white">
+    <!-- Barra de gráfico 1 -->
+    <rect x="25" y="45" width="10" height="30" rx="2"/>
+    <!-- Barra de gráfico 2 -->
+    <rect x="45" y="35" width="10" height="40" rx="2"/>
+    <!-- Barra de gráfico 3 -->
+    <rect x="65" y="25" width="10" height="50" rx="2"/>
+
+    <!-- Línea de tendencia -->
+    <path d="M 22 55 L 38 45 L 52 35 L 72 20" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <circle cx="72" cy="20" r="4" fill="white"/>
+  </g>
+</svg>
